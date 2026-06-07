@@ -803,6 +803,7 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
   .bnav-fixtures { -webkit-mask-image: url(../img/nav-fixtures.svg); mask-image: url(../img/nav-fixtures.svg); }
   .bnav-teams    { -webkit-mask-image: url(../img/nav-teams.svg);    mask-image: url(../img/nav-teams.svg);    }
   .bnav-bracket  { -webkit-mask-image: url(../img/nav-bracket.svg);  mask-image: url(../img/nav-bracket.svg);  }
+  .bnav-tips     { -webkit-mask-image: url(../img/nav-tips.svg);     mask-image: url(../img/nav-tips.svg);     }
   .bnav-admin    { -webkit-mask-image: url(../img/nav-admin.svg);    mask-image: url(../img/nav-admin.svg);    }
 
   body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
