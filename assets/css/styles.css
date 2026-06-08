@@ -449,8 +449,9 @@ hr { border:none; border-top:1px solid var(--border); margin:1rem 0; width:100%;
   background: linear-gradient(90deg, #510e93 0%, #89faea 100%);
   color: #fff;
   transition: filter .12s;
+  text-decoration: none; cursor: pointer;
 }
-.ladder-row:hover { filter: brightness(1.06); }
+.ladder-row:hover { filter: brightness(1.06); text-decoration: none; }
 
 /* Leader row: amber → mint */
 .ladder-row.leader {
