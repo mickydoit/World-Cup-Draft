@@ -22,6 +22,7 @@ let flash = null;          // {notice} | {problem} consumed by the next admin re
 let loginError = null;
 let refreshTimer = null;
 let lastPaintedRoute = null;
+let lastRenderedBody = null;
 let cachedData = null;
 
 const NAV = [
@@ -94,10 +95,14 @@ function paint(route, body) {
   document.body.dataset.route = routeKey || 'ladder';
   const appEl = document.getElementById('app');
   if (appEl && lastPaintedRoute === route) {
-    appEl.innerHTML = body;
+    if (body !== lastRenderedBody) {
+      appEl.innerHTML = body;
+      lastRenderedBody = body;
+    }
   } else {
     root.innerHTML = headerHtml(route) + `<main class="container" id="app">${body}</main>`;
     lastPaintedRoute = route;
+    lastRenderedBody = body;
   }
   // Restore open state on auto-refresh (skip on first load — let the smart default apply)
   if (hadAccordions && openGroups.size > 0) {
