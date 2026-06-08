@@ -7,18 +7,18 @@ import { scoreFixture, computeLadder, DEFAULT_STAGE_POINTS } from './scoring.js'
 // Draft order
 // ---------------------------------------------------------------------------
 
-test('snake draft: 5 players x 9 rounds = 45 picks, even rounds reversed', () => {
-  const seq = buildPickSequence([1, 2, 3, 4, 5], 9);
-  assert.equal(seq.length, 45);
+test('snake draft: 6 players x 8 rounds = 48 picks, even rounds reversed', () => {
+  const seq = buildPickSequence([1, 2, 3, 4, 5, 6], 8);
+  assert.equal(seq.length, 48);
   // Round 1 forward
-  assert.deepEqual(seq.slice(0, 5).map((p) => p.playerId), [1, 2, 3, 4, 5]);
+  assert.deepEqual(seq.slice(0, 6).map((p) => p.playerId), [1, 2, 3, 4, 5, 6]);
   // Round 2 reversed
-  assert.deepEqual(seq.slice(5, 10).map((p) => p.playerId), [5, 4, 3, 2, 1]);
+  assert.deepEqual(seq.slice(6, 12).map((p) => p.playerId), [6, 5, 4, 3, 2, 1]);
   // Round 3 forward again
-  assert.deepEqual(seq.slice(10, 15).map((p) => p.playerId), [1, 2, 3, 4, 5]);
-  // Everyone gets exactly 9 picks
-  for (const id of [1, 2, 3, 4, 5]) {
-    assert.equal(seq.filter((p) => p.playerId === id).length, 9);
+  assert.deepEqual(seq.slice(12, 18).map((p) => p.playerId), [1, 2, 3, 4, 5, 6]);
+  // Everyone gets exactly 8 picks
+  for (const id of [1, 2, 3, 4, 5, 6]) {
+    assert.equal(seq.filter((p) => p.playerId === id).length, 8);
   }
 });
 

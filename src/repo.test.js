@@ -12,18 +12,18 @@ test('full draft + scoring flow through the database', async () => {
   // Before the draft.
   let state = await getDraftState();
   assert.equal(state.settings.draft_status, 'not_started');
-  assert.equal(state.players.length, 5);
+  assert.equal(state.players.length, 6);
   assert.equal(state.available.length, 48);
 
-  // Start: randomise order, snake of 45 picks.
+  // Start: randomise order, snake of 48 picks.
   await startDraft();
   state = await getDraftState();
   assert.equal(state.settings.draft_status, 'in_progress');
-  assert.equal(state.totalPicks, 45);
+  assert.equal(state.totalPicks, 48);
   assert.ok(state.current, 'someone should be on the clock');
 
   // Run the whole draft, always taking the first available team.
-  for (let i = 0; i < 45; i++) {
+  for (let i = 0; i < 48; i++) {
     const s = await getDraftState();
     assert.ok(s.current, `expected a current pick at step ${i}`);
     await makePick(s.available[0].id);
@@ -31,11 +31,11 @@ test('full draft + scoring flow through the database', async () => {
 
   state = await getDraftState();
   assert.equal(state.settings.draft_status, 'complete');
-  assert.equal(state.picksMade, 45);
+  assert.equal(state.picksMade, 48);
   for (const p of state.players) {
-    assert.equal(p.roster.length, 9, `${p.name} should have 9 teams`);
+    assert.equal(p.roster.length, 8, `${p.name} should have 8 teams`);
   }
-  assert.equal(state.available.length, 3, '3 teams should remain undrafted');
+  assert.equal(state.available.length, 0, 'all teams should be drafted');
 
   // Enter a group result between two DIFFERENT owners (draft order is random,
   // so find such a fixture rather than assuming one) -> one win point awarded.
