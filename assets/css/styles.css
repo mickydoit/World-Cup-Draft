@@ -1,5 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;600;700&display=swap');
 
+@font-face {
+  font-family: 'PodiumSharp';
+  src: url('../fonts/Fontspring-DEMO-podiumsharp-4.13.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ============================================================
    LBH Club — World Cup Draft · FIFA WC26
    Redesign — white content area, dark nav, gradient pill rows
@@ -294,7 +302,7 @@ button.link:hover { color: #fff; background: rgba(255,255,255,.10); }
 @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
 
 h1 {
-  font-family: var(--font); font-size: 3rem; font-weight: 900;
+  font-family: 'PodiumSharp', var(--font); font-size: 3rem; font-weight: 900;
   letter-spacing: .05em; text-transform: uppercase;
   margin: 0 0 2rem;
   color: var(--h1-color);
