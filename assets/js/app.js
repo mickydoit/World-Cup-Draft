@@ -2,8 +2,8 @@
 // Pages base path with no server rewrites.
 
 import { store } from './store.js?v=5';
-import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView } from './compute.js?v=33';
-import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView } from './views.js?v=33';
+import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView } from './compute.js?v=37';
+import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView } from './views.js?v=37';
 
 const root = document.getElementById('root');
 const PASSWORD = (window.LBH_CONFIG || {}).ADMIN_PASSWORD || 'admin';
@@ -21,6 +21,7 @@ let draftMyTurn = false;   // set each draft render; pauses auto-refresh while y
 let flash = null;          // {notice} | {problem} consumed by the next admin render
 let loginError = null;
 let refreshTimer = null;
+let lastPaintedRoute = null;
 
 const NAV = [
   { route: '/', label: 'Ladder', key: 'ladder' },
@@ -93,7 +94,13 @@ function paint(route, body) {
     if (el.dataset.group) openGroups.add(el.dataset.group);
   });
   document.body.dataset.route = routeKey || 'ladder';
-  root.innerHTML = headerHtml(route) + `<main class="container" id="app">${body}</main>`;
+  const appEl = document.getElementById('app');
+  if (appEl && lastPaintedRoute === route) {
+    appEl.innerHTML = body;
+  } else {
+    root.innerHTML = headerHtml(route) + `<main class="container" id="app">${body}</main>`;
+    lastPaintedRoute = route;
+  }
   // Restore open state on auto-refresh (skip on first load — let the smart default apply)
   if (hadAccordions && openGroups.size > 0) {
     document.querySelectorAll('.fxday').forEach(el => {
