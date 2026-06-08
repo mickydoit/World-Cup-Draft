@@ -2,8 +2,8 @@
 // Pages base path with no server rewrites.
 
 import { store } from './store.js?v=5';
-import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView } from './compute.js?v=37';
-import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView } from './views.js?v=37';
+import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView } from './compute.js?v=38';
+import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView } from './views.js?v=38';
 
 const root = document.getElementById('root');
 const PASSWORD = (window.LBH_CONFIG || {}).ADMIN_PASSWORD || 'admin';
@@ -22,6 +22,7 @@ let flash = null;          // {notice} | {problem} consumed by the next admin re
 let loginError = null;
 let refreshTimer = null;
 let lastPaintedRoute = null;
+let cachedData = null;
 
 const NAV = [
   { route: '/', label: 'Ladder', key: 'ladder' },
@@ -109,9 +110,43 @@ function paint(route, body) {
   }
 }
 
+function bodyFromData(route, data) {
+  if (route.startsWith('/draft/player/')) {
+    return renderPlayerView(getPlayerView(data, Number(route.split('/')[3])));
+  }
+  if (route.startsWith('/draft/team/')) {
+    return renderTeamView(getTeamView(data, Number(route.split('/')[3])));
+  }
+  switch (route) {
+    case '/fixtures': return renderFixtures(getFixturesView(data));
+    case '/bracket':  return renderBracket(getBracket(data));
+    case '/draft': {
+      const ds = getDraftState(data);
+      if (ds.settings.draft_status === 'complete') return renderTeamsOverview(getTeamsView(data));
+      draftMyTurn = ds.settings.draft_status === 'in_progress' && !!ds.current && ds.current.playerId === myId;
+      return renderDraft(ds, isAdmin, myId);
+    }
+    case '/admin':
+      if (!isAdmin) { const b = renderLogin(loginError); loginError = null; return b; }
+      else {
+        const b = renderAdmin({
+          groups: getFixturesView(data),
+          players: [...data.players].sort((a, b) => a.id - b.id),
+          teams: [...data.teams].sort((a, b) => (a.ranking ?? 1e9) - (b.ranking ?? 1e9)),
+          settings: data.settings,
+          mode: store.mode,
+          notice: flash && flash.notice,
+          problem: flash && flash.problem,
+        });
+        flash = null;
+        return b;
+      }
+    default: return renderLadder(getLadder(data));
+  }
+}
+
 async function render(opts = {}) {
   const route = currentRoute();
-  if (!root.querySelector('.topbar')) paint(route, `<p class="hint">Loading…</p>`);
 
   if (route === '/login') {
     paint(route, renderLogin(loginError));
@@ -120,9 +155,17 @@ async function render(opts = {}) {
     return;
   }
 
+  // Paint immediately with cached data so navigation feels instant
+  if (lastPaintedRoute !== route && cachedData) {
+    paint(route, bodyFromData(route, cachedData));
+  } else if (!root.querySelector('.topbar')) {
+    paint(route, `<p class="hint">Loading…</p>`);
+  }
+
   let data;
   try {
     data = await store.loadAll();
+    cachedData = data;
   } catch (err) {
     paint(route, `
       <h1>Couldn't load data</h1>
@@ -132,52 +175,7 @@ async function render(opts = {}) {
     return;
   }
 
-  let body;
-  if (route.startsWith('/draft/player/')) {
-    const playerId = Number(route.split('/')[3]);
-    body = renderPlayerView(getPlayerView(data, playerId));
-  } else if (route.startsWith('/draft/team/')) {
-    const teamId = Number(route.split('/')[3]);
-    body = renderTeamView(getTeamView(data, teamId));
-  } else {
-    switch (route) {
-      case '/fixtures':
-        body = renderFixtures(getFixturesView(data));
-        break;
-      case '/bracket':
-        body = renderBracket(getBracket(data));
-        break;
-      case '/draft': {
-        const ds = getDraftState(data);
-        if (ds.settings.draft_status === 'complete') {
-          body = renderTeamsOverview(getTeamsView(data));
-        } else {
-          draftMyTurn = ds.settings.draft_status === 'in_progress' && !!ds.current && ds.current.playerId === myId;
-          body = renderDraft(ds, isAdmin, myId);
-        }
-        break;
-      }
-      case '/admin':
-        if (!isAdmin) { body = renderLogin(loginError); loginError = null; }
-        else {
-          body = renderAdmin({
-            groups: getFixturesView(data),
-            players: [...data.players].sort((a, b) => a.id - b.id),
-            teams: [...data.teams].sort((a, b) => (a.ranking ?? 1e9) - (b.ranking ?? 1e9)),
-            settings: data.settings,
-            mode: store.mode,
-            notice: flash && flash.notice,
-            problem: flash && flash.problem,
-          });
-          flash = null;
-        }
-        break;
-      case '/':
-      default:
-        body = renderLadder(getLadder(data));
-    }
-  }
-  paint(route, body);
+  paint(route, bodyFromData(route, data));
   setAutoRefresh(route);
   // On navigation (not the silent auto-refresh), jump to where the tournament
   // is up to so you don't have to scroll past weeks of finished games.
