@@ -316,13 +316,13 @@ window.addEventListener('hashchange', () => {
 // Splash: hide after data loads, but never before the bar animation finishes (2.4s)
 const splashEl = document.getElementById('splash');
 const splashT0 = Date.now();
-const MIN_SPLASH = 2400;
+const MIN_SPLASH = 800;
 const hideSplash = () => {
   if (!splashEl || splashEl.classList.contains('splash-out')) return;
   splashEl.classList.add('splash-out');
   setTimeout(() => splashEl.remove(), 520);
 };
-const splashGuard = setTimeout(hideSplash, 8000); // failsafe
+const splashGuard = setTimeout(hideSplash, 4000); // failsafe
 render({ scrollToCurrent: true }).finally(() => {
   clearTimeout(splashGuard);
   setTimeout(hideSplash, Math.max(0, MIN_SPLASH - (Date.now() - splashT0)));

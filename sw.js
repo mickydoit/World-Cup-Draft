@@ -1,18 +1,13 @@
 const CACHE = 'lbh-v2';
 
-// Install immediately — don't wait for existing tabs to close
 self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', e => {
+  // Delete old caches and take control — no force-reload (avoids interrupting splash)
   e.waitUntil(
-    // Delete old caches
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      // Take control of all open tabs right away
       .then(() => clients.claim())
-      // Force every open tab to reload so they get fresh HTML
-      .then(() => clients.matchAll({ type: 'window' }))
-      .then(all => Promise.all(all.map(c => c.navigate(c.url))))
   );
 });
 
