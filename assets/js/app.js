@@ -77,9 +77,6 @@ function headerHtml(route) {
     <a href="#/bracket" class="bnav-item ${ak === 'bracket' ? 'active' : ''}" aria-label="Bracket">
       <span class="bnav-icon bnav-bracket"></span>
     </a>
-    <a href="#/tips" class="bnav-item ${ak === 'tips' ? 'active' : ''}" aria-label="Tipping">
-      <span class="bnav-icon bnav-tips"></span>
-    </a>
     <a href="${isAdmin ? '#/admin' : '#/login'}" class="bnav-item ${ak === 'admin' ? 'active' : ''}" aria-label="Admin">
       <span class="bnav-icon bnav-admin"></span>
     </a>
