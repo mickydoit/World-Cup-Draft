@@ -59,7 +59,7 @@ const QUALIFIED = [
 
 export const TEAMS = QUALIFIED;
 
-/** The 5 players (still editable in the admin setup). */
-export const DEFAULT_PLAYERS = ['Papacostas', 'Kerr', 'DeWet', 'Barmentloo', 'Terpcou'];
+/** The 6 players (still editable in the admin setup). */
+export const DEFAULT_PLAYERS = ['Papacostas', 'Kerr', 'DeWet', 'Barmentloo', 'Terpcou', 'Player 06'];
 
-export const TEAMS_PER_PLAYER = 9; // 5 players x 9 = 45 drafted, 3 left undrafted
+export const TEAMS_PER_PLAYER = 8; // 6 players x 8 = 48 drafted, 0 left undrafted
