@@ -1016,10 +1016,10 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
   font-family: var(--font); font-weight: 700; font-size: .82rem;
   color: #202123;
 }
-/* Played fixture: owner shown in dark chip */
-.fixture-card.played .fxc-owner {
-  background: #202123; color: #d6c9a0;
-  border-radius: 4px; padding: 1px 6px;
+/* Winning owner gets the dark pill; loser stays plain */
+.fxc-owner.winner {
+  background: #202123; color: #fff;
+  border-radius: 4px; padding: 2px 8px;
 }
 .fxc-owner.dim { background: none; color: rgba(0,0,0,0.38); font-weight: 400; }
 .fxc-vs {

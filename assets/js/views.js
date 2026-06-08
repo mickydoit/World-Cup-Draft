@@ -49,9 +49,9 @@ export function renderFixtures(groups) {
         <span class="fxc-team">${esc(f.away_name || 'TBD')}</span>
       </div>
       <div class="fxc-owners">
-        <span class="fxc-owner ${f.home_owner ? '' : 'dim'}">${esc(f.home_owner || '—')}</span>
+        <span class="fxc-owner ${f.home_is_winner ? 'winner' : ''} ${!f.home_owner ? 'dim' : ''}">${esc(f.home_owner || '—')}</span>
         <span class="fxc-vs">vs</span>
-        <span class="fxc-owner ${f.away_owner ? '' : 'dim'}">${esc(f.away_owner || '—')}</span>
+        <span class="fxc-owner ${f.away_is_winner ? 'winner' : ''} ${!f.away_owner ? 'dim' : ''}">${esc(f.away_owner || '—')}</span>
       </div>
     </div>`;
   };
