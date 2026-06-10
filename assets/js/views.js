@@ -361,13 +361,15 @@ export function renderPlayerView(pv) {
   <div class="view-btn-wrap"><a class="view-btn" href="#/draft">‹ All Teams</a></div>`;
 }
 
-export function renderTeamView(tv) {
+export function renderTeamView(tv, fromPlayerRoute) {
   if (!tv) return `<p class="hint">Team not found.</p>`;
   const { team, fixtures } = tv;
   const upcoming = fixtures.filter((f) => f.status !== 'finished');
   const played = [...fixtures.filter((f) => f.status === 'finished')].reverse();
+  const backHref = fromPlayerRoute ? `#${fromPlayerRoute}` : '#/draft';
+  const backLabel = fromPlayerRoute ? '‹ My Teams' : '‹ All Teams';
   return `
-  <a class="back-link" href="#/draft">‹ All Teams</a>
+  <a class="back-link" href="${backHref}">${backLabel}</a>
   <h1>${esc(team.name)}</h1>
   ${upcoming.length ? `
   <section class="fxgroup">
@@ -379,7 +381,7 @@ export function renderTeamView(tv) {
     <h3 class="section-label">Results</h3>
     <ul class="fixtures">${played.map(fxPill).join('')}</ul>
   </section>` : ''}
-  <div class="view-btn-wrap"><a class="view-btn" href="#/draft">‹ All Teams</a></div>`;
+  <div class="view-btn-wrap"><a class="view-btn" href="${backHref}">${backLabel}</a></div>`;
 }
 
 // ----------------------------------------------------------------- Admin

@@ -23,6 +23,8 @@ let loginError = null;
 let refreshTimer = null;
 let lastPaintedRoute = null;
 let lastRenderedBody = null;
+let lastRenderedRoute = null;
+let prevRoute = null;
 let cachedData = null;
 
 const NAV = [
@@ -117,7 +119,8 @@ function bodyFromData(route, data) {
     return renderPlayerView(getPlayerView(data, Number(route.split('/')[3])));
   }
   if (route.startsWith('/draft/team/')) {
-    return renderTeamView(getTeamView(data, Number(route.split('/')[3])));
+    const fromPlayer = prevRoute && prevRoute.startsWith('/draft/player/') ? prevRoute : null;
+    return renderTeamView(getTeamView(data, Number(route.split('/')[3])), fromPlayer);
   }
   switch (route) {
     case '/fixtures': return renderFixtures(getFixturesView(data));
@@ -149,6 +152,8 @@ function bodyFromData(route, data) {
 
 async function render(opts = {}) {
   const route = currentRoute();
+  if (lastRenderedRoute !== route) prevRoute = lastRenderedRoute;
+  lastRenderedRoute = route;
 
   if (route === '/login') {
     paint(route, renderLogin(loginError));
