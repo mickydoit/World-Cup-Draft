@@ -56,25 +56,24 @@ export function renderFixtures(groups) {
     </div>`;
   };
 
-  // Determine which group should be open by default:
-  // The last group that has started (kickoff passed) but isn't fully played yet.
-  // If no such group exists, open the first upcoming group.
+  const upcoming = groups.filter(g => !g.allPlayed);
+  const results  = groups.filter(g => g.allPlayed);
+
+  // Which upcoming group to open: the last one that has started or has any played
   const now = Date.now();
   let activeTitle = null;
-  for (const g of groups) {
-    const hasStarted = g.date_ts != null && g.date_ts <= now + 2 * 3600 * 1000; // 2hr lead-in
+  for (const g of upcoming) {
+    const hasStarted = g.date_ts != null && g.date_ts <= now + 2 * 3600 * 1000;
     const hasAnyPlayed = g.fixtures.some(f => f.status === 'finished');
-    if ((hasStarted || hasAnyPlayed) && !g.allPlayed) activeTitle = g.title;
+    if (hasStarted || hasAnyPlayed) activeTitle = g.title;
   }
   if (!activeTitle) {
-    const next = groups.find(g => !g.allPlayed && g.date_ts != null && g.date_ts > now);
+    const next = upcoming.find(g => g.date_ts != null && g.date_ts > now);
     if (next) activeTitle = next.title;
+    else if (upcoming.length > 0) activeTitle = upcoming[0].title;
   }
 
-  return `
-  <h1>Fixtures</h1>
-  <p class="hint">Times shown in AEST. Owner names appear once the draft is complete.</p>
-  ${groups.map((g) => {
+  const renderGroup = (g, forceOpen) => {
     const played = g.fixtures.filter(f => f.status === 'finished').length;
     const total = g.fixtures.length;
     const badge = g.allPlayed
@@ -82,7 +81,7 @@ export function renderFixtures(groups) {
       : played > 0
         ? `<span class="fxday-badge">${played}/${total} played</span>`
         : `<span class="fxday-badge">${total} match${total !== 1 ? 'es' : ''}</span>`;
-    const isOpen = g.title === activeTitle;
+    const isOpen = forceOpen !== undefined ? forceOpen : g.title === activeTitle;
     return `
     <details class="fxday" data-group="${esc(g.title)}"${isOpen ? ' open' : ''}>
       <summary class="fxday-header">
@@ -91,7 +90,23 @@ export function renderFixtures(groups) {
       </summary>
       <div class="fxday-body">${g.fixtures.map(card).join('')}</div>
     </details>`;
-  }).join('')}
+  };
+
+  const resultsBtn = results.length ? `
+    <button class="fx-jump-btn" data-action="scroll-to" data-target="fx-results">Past Results ↓</button>` : '';
+
+  const resultsSection = results.length ? `
+    <div class="fx-results" id="fx-results">
+      <p class="section-label">Results</p>
+      ${[...results].reverse().map(g => renderGroup(g, false)).join('')}
+    </div>` : '';
+
+  return `
+  <h1>Fixtures</h1>
+  <p class="hint">Times shown in AEST. Owner names appear once the draft is complete.</p>
+  ${resultsBtn}
+  ${upcoming.map(g => renderGroup(g)).join('')}
+  ${resultsSection}
   <div class="view-btn-wrap"><a class="view-btn" href="#/">View Ladder</a></div>`;
 }
 

@@ -105,6 +105,7 @@ function paint(route, body) {
     root.innerHTML = headerHtml(route) + `<main class="container" id="app">${body}</main>`;
     lastPaintedRoute = route;
     lastRenderedBody = body;
+    window.scrollTo(0, 0);
   }
   // Restore open state on auto-refresh (skip on first load — let the smart default apply)
   if (hadAccordions && openGroups.size > 0) {
@@ -186,7 +187,7 @@ async function render(opts = {}) {
   setAutoRefresh(route);
   // On navigation (not the silent auto-refresh), jump to where the tournament
   // is up to so you don't have to scroll past weeks of finished games.
-  if (opts.scrollToCurrent && (route === '/fixtures' || route === '/bracket')) {
+  if (opts.scrollToCurrent && route === '/bracket') {
     scrollToCurrentMatch(route);
   }
 }
@@ -317,6 +318,9 @@ root.addEventListener('click', (e) => {
   } else if (action === 'del-fixture') {
     if (!window.confirm('Delete this knockout match?')) return;
     run(() => store.deleteFixture(Number(el.dataset.id)));
+  } else if (action === 'scroll-to') {
+    const target = document.getElementById(el.dataset.target);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 });
 

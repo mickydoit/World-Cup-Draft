@@ -968,6 +968,21 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
   border-top: 1px solid var(--border);
 }
 
+/* Past Results jump button */
+.fx-jump-btn {
+  display: inline-flex; align-items: center; gap: .3rem;
+  background: var(--bg-2); border: 1px solid var(--border-em);
+  border-radius: 999px; padding: .4rem 1rem;
+  font-family: var(--font); font-weight: 700; font-size: .78rem;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text-2); cursor: pointer; margin-bottom: .75rem;
+  transition: color .15s;
+}
+.fx-jump-btn:hover { color: var(--text); }
+
+/* Results section at bottom of fixtures */
+.fx-results { margin-top: 1.5rem; }
+
 /* Fixture card — same gradient as branding, tall 3-row layout */
 .fixture-card {
   background: linear-gradient(90deg, #f2fe6a 0%, #8b42ff 100%);
