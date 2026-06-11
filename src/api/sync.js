@@ -1,6 +1,7 @@
 import { query, withTransaction } from '../db/index.js';
 import * as footballData from './footballData.js';
 import * as sportmonks from './sportmonks.js';
+import * as espn from './espn.js';
 import { rankFor, codeFor } from '../data/fifaRankings.js';
 
 // Which score provider is active, and its token. Defaults to SportMonks.
@@ -9,13 +10,18 @@ function activeProvider() {
   if (name === 'football-data') {
     return { name: 'football-data', fetch: footballData.fetchMatches, token: process.env.FOOTBALL_DATA_TOKEN };
   }
+  if (name === 'espn') {
+    return { name: 'espn', fetch: espn.fetchMatches, token: null }; // no token required
+  }
   return { name: 'sportmonks', fetch: sportmonks.fetchMatches, token: process.env.SPORTMONKS_TOKEN };
 }
 
 /** For the UI / startup logging: which provider and whether its token is set. */
 export function scoreProviderStatus() {
   const p = activeProvider();
-  return { name: p.name, tokenSet: Boolean(p.token) };
+  // ESPN needs no token — treat it as always having what it needs.
+  const tokenSet = p.name === 'espn' || Boolean(p.token);
+  return { name: p.name, tokenSet };
 }
 
 /** Map a normalised match's winner side to a concrete team id (null = draw/unknown). */
@@ -228,6 +234,44 @@ export async function ensureApiIds(matches) {
   return { teamsLinked, fixturesLinked, unmatched };
 }
 
+/**
+ * Score-sync for the ESPN provider. ESPN events use different IDs from football-data,
+ * so we can't match by api_id. Instead we resolve teams by display name and find
+ * fixtures by their (home_team_id, away_team_id) pair.
+ */
+async function syncScoresFromEspn(matches) {
+  const teamRows = (await query('SELECT id, name FROM teams')).rows;
+  const idByName = new Map(teamRows.map((r) => [r.name.toLowerCase(), r.id]));
+
+  let updated = 0;
+  for (const m of matches) {
+    if (!m.finished || m.homeScore == null || m.awayScore == null) continue;
+
+    const homeId = idByName.get(m.home.name.toLowerCase());
+    const awayId = idByName.get(m.away.name.toLowerCase());
+    if (!homeId || !awayId) continue;
+
+    const fx = (
+      await query(
+        'SELECT id FROM fixtures WHERE home_team_id = $1 AND away_team_id = $2',
+        [homeId, awayId]
+      )
+    ).rows[0];
+    if (!fx) continue;
+
+    const wId = winnerTeamId(m, homeId, awayId);
+    await query(
+      `UPDATE fixtures
+          SET home_score = $1, away_score = $2, winner_team_id = $3,
+              status = 'finished', updated_at = now()
+        WHERE id = $4`,
+      [m.homeScore, m.awayScore, wId, fx.id]
+    );
+    updated += 1;
+  }
+  return { updated, inserted: 0 };
+}
+
 // Fetch-and-do helpers used by the cron job and the admin buttons. They pick the
 // active provider (SportMonks by default) and read its token from the env.
 export async function importFromApi() {
@@ -237,6 +281,13 @@ export async function importFromApi() {
 }
 export async function syncFromApi() {
   const p = activeProvider();
+
+  if (p.name === 'espn') {
+    const matches = await p.fetch(null);
+    const { updated, inserted } = await syncScoresFromEspn(matches);
+    return { provider: 'espn', fetched: matches.length, teamsLinked: 0, fixturesLinked: 0, unmatched: [], updated, inserted };
+  }
+
   if (!p.token) throw new Error(`No API token set for provider "${p.name}".`);
   const matches = await p.fetch(p.token);
   const mapped = await ensureApiIds(matches); // link provider ids onto seeded rows first

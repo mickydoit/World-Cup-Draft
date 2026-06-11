@@ -1,10 +1,10 @@
 name: Sync World Cup scores
 
-# Polls football-data.org and writes results into Supabase. GitHub Pages is
-# static and can't poll on its own, so this scheduled job is the "server" that
-# keeps the ladder live. Set two repository secrets first (Settings → Secrets and
-# variables → Actions): FOOTBALL_DATA_TOKEN (free from football-data.org) and
-# DATABASE_URL (your Supabase session-pooler connection string).
+# Polls ESPN's unofficial public API and writes results into Supabase. GitHub Pages
+# is static and can't poll on its own, so this scheduled job is the "server" that
+# keeps the ladder live. Only one secret is required (Settings → Secrets and
+# variables → Actions): DATABASE_URL (your Supabase session-pooler connection string).
+# No API token is needed — ESPN's scoreboard is public.
 on:
   schedule:
     - cron: '*/5 * * * *' # every 5 min — GitHub's minimum cron granularity
@@ -34,8 +34,7 @@ jobs:
       # attempt (transient API error) is logged and the loop keeps going.
       - name: Poll scores every ~60s
         env:
-          SCORE_PROVIDER: football-data
-          FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
+          SCORE_PROVIDER: espn
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           for i in 1 2 3 4 5; do
