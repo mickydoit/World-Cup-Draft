@@ -393,6 +393,8 @@ export function renderAdmin({ groups, players, teams, settings, mode, notice, pr
     ${g.fixtures.map((f) => `
       <form data-action="score" id="fx-${f.id}" class="score-row">
         <input type="hidden" name="fixtureId" value="${f.id}" />
+        <input type="hidden" name="homeTeamId" value="${f.home_team_id}" />
+        <input type="hidden" name="awayTeamId" value="${f.away_team_id}" />
         <span class="t home">${esc(f.home_name || 'TBD')}</span>
         <input class="sc" type="number" min="0" name="homeScore" value="${f.home_score ?? ''}" />
         <input class="sc" type="number" min="0" name="awayScore" value="${f.away_score ?? ''}" />

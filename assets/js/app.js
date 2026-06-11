@@ -264,7 +264,14 @@ root.addEventListener('submit', (e) => {
     const home = fd.get('homeScore') === '' ? null : Number(fd.get('homeScore'));
     const away = fd.get('awayScore') === '' ? null : Number(fd.get('awayScore'));
     const w = fd.get('winnerTeamId');
-    run(async () => { await store.setScore(id, home, away, w ? Number(w) : null); flash = { notice: 'Score saved.' }; });
+    const homeTeamId = Number(fd.get('homeTeamId'));
+    const awayTeamId = Number(fd.get('awayTeamId'));
+    let winnerId = w ? Number(w) : null;
+    if (!winnerId && home != null && away != null) {
+      if (home > away) winnerId = homeTeamId;
+      else if (away > home) winnerId = awayTeamId;
+    }
+    run(async () => { await store.setScore(id, home, away, winnerId); flash = { notice: 'Score saved.' }; });
   } else if (action === 'players') {
     const map = {};
     for (const [k, v] of fd.entries()) if (k.startsWith('player_')) map[k.slice(7)] = v;
