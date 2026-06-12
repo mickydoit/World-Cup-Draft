@@ -133,15 +133,17 @@ a:hover { text-decoration: underline; }
   position: fixed; inset: 0; z-index: 9999;
   background: #111;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 1.5rem;
+  align-items: center; justify-content: center;
 }
 #splash.splash-out { opacity: 0; pointer-events: none; transition: opacity .5s ease; }
-.splash-logo-wrap { display: flex; align-items: center; }
+.splash-logo-wrap { display: flex; align-items: center; transform: translateY(-4vh); }
 .splash-logo-img {
-  height: 52px; width: auto;
+  height: 120px; width: auto;
 }
 .splash-bar-track {
-  width: min(320px, 80vw); height: 6px;
+  position: absolute; bottom: 34%;
+  left: 1.5rem; right: 1.5rem;
+  height: 6px;
   border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden;
 }
 .splash-bar {
