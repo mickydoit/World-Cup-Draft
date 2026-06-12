@@ -131,51 +131,26 @@ a:hover { text-decoration: underline; }
 /* ---- SPLASH / LOADING SCREEN ---- */
 #splash {
   position: fixed; inset: 0; z-index: 9999;
-  background: #111111;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-}
-#splash.splash-out {
-  opacity: 0; pointer-events: none;
-  transition: opacity .5s ease;
-}
-.splash-brand {
-  display: flex; align-items: center; gap: .8rem;
-}
-.splash-logo { width: 160px; height: auto; }
-/* Spinning gradient ring around the photo */
-.splash-spinner {
-  width: 96px; height: 96px; border-radius: 50%;
-  padding: 3px;
-  background: conic-gradient(from 0deg, #8b42ff, #4dffc3, #8b42ff);
-  animation: splash-spin 1.2s linear infinite;
-}
-.splash-spinner-inner {
-  width: 100%; height: 100%;
-  border-radius: 50%; overflow: hidden;
   background: #111;
-  animation: splash-counter 1.2s linear infinite;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1.5rem;
 }
-.splash-spinner-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-@keyframes splash-spin    { to { transform: rotate(360deg);  } }
-@keyframes splash-counter { to { transform: rotate(-360deg); } }
-/* Loading bar fills left to right */
+#splash.splash-out { opacity: 0; pointer-events: none; transition: opacity .5s ease; }
+.splash-logo-wrap { display: flex; align-items: center; }
+.splash-logo-img {
+  height: 52px; width: auto;
+}
 .splash-bar-track {
-  position: absolute; bottom: 3rem;
-  left: 1.5rem; right: 1.5rem;
-  height: 37px; border-radius: 999px;
-  background: rgba(255,255,255,.06); overflow: hidden;
+  width: min(320px, 80vw); height: 6px;
+  border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden;
 }
 .splash-bar {
   height: 100%; border-radius: 999px;
-  background: linear-gradient(90deg, #8b42ff 0%, #4dffc3 100%);
-  transform: scaleX(0); transform-origin: left center;
-  animation: splash-load 2.4s cubic-bezier(.4,0,.2,1) forwards;
+  background: linear-gradient(90deg, #8bffec, #A855F7);
+  transform: scaleX(0); transform-origin: left;
+  animation: splash-load 2s cubic-bezier(.4,0,.2,1) forwards;
 }
-@keyframes splash-load {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
+@keyframes splash-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 /* ---- TOPBAR ---- */
 .topbar {
