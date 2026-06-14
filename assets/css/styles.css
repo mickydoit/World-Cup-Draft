@@ -150,7 +150,6 @@ a:hover { text-decoration: underline; }
 }
 .splash-logo-img {
   height: 76px; width: auto;
-  filter: brightness(0);
 }
 .splash-bar-track {
   position: absolute; bottom: 20%;
