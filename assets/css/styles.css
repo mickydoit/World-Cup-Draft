@@ -152,7 +152,7 @@ a:hover { text-decoration: underline; }
   .splash-bg-img { height: clamp(480px, 65dvh, 720px); bottom: 0; }
 }
 @media (max-width: 767px) {
-  .splash-bg-img { transform: translateX(-54%); }
+  .splash-bg-img { transform: translateX(-56%); }
 }
 .splash-logo-wrap {
   position: absolute;
