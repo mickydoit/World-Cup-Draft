@@ -1,4 +1,4 @@
-const CACHE = 'lbh-v2';
+const CACHE = 'lbh-v3';
 
 self.addEventListener('install', () => self.skipWaiting());
 
