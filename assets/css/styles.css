@@ -139,13 +139,13 @@ a:hover { text-decoration: underline; }
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover; object-position: 50% top;
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 42%);
-  mask-image: linear-gradient(to right, transparent 0%, black 42%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 22%);
+  mask-image: linear-gradient(to right, transparent 0%, black 22%);
   z-index: 1;
 }
 .splash-logo-wrap {
   position: absolute;
-  left: 1.5rem; top: 58%;
+  left: 20%; top: 36%;
   transform: translateY(-50%);
   z-index: 2;
 }
@@ -153,8 +153,8 @@ a:hover { text-decoration: underline; }
   height: 76px; width: auto;
 }
 .splash-bar-track {
-  position: absolute; bottom: 20%;
-  left: 1.5rem; right: 1.5rem;
+  position: absolute; top: 44%;
+  left: 20%; right: 8%;
   height: 6px;
   border-radius: 999px; background: rgba(0,0,0,.15); overflow: hidden;
   z-index: 2;
