@@ -131,32 +131,31 @@ a:hover { text-decoration: underline; }
 /* ---- SPLASH / LOADING SCREEN ---- */
 #splash {
   position: fixed; inset: 0; z-index: 9999;
-  background: linear-gradient(175deg, #d4c800 0%, #4a5400 100%);
+  background: linear-gradient(135deg, #FCDB00 0%, #C9C120 50%, #7CAD2A 100%);
   overflow: hidden;
 }
 #splash.splash-out { opacity: 0; pointer-events: none; transition: opacity .5s ease; }
 .splash-bg-img {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover; object-position: 25% top;
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 22%);
-  mask-image: linear-gradient(to right, transparent 0%, black 22%);
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 58%;
+  object-fit: cover; object-position: center top;
   z-index: 1;
 }
 .splash-logo-wrap {
   position: absolute;
-  left: 20%; top: 36%;
-  transform: translateY(-50%);
+  left: 50%; top: 27%;
+  transform: translate(-50%, -50%);
   z-index: 2;
 }
 .splash-logo-img {
-  height: 76px; width: auto;
+  height: 90px; width: auto;
 }
 .splash-bar-track {
-  position: absolute; top: 44%;
-  left: 20%; right: 8%;
-  height: 6px;
-  border-radius: 999px; background: rgba(0,0,0,.15); overflow: hidden;
+  position: absolute; top: 39%;
+  left: 50%; transform: translateX(-50%);
+  width: 40%; height: 5px;
+  border-radius: 999px; background: rgba(0,0,0,.10); overflow: hidden;
   z-index: 2;
 }
 .splash-bar {
