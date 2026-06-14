@@ -135,25 +135,21 @@ a:hover { text-decoration: underline; }
   overflow: hidden;
 }
 #splash.splash-out { opacity: 0; pointer-events: none; transition: opacity .5s ease; }
-/* Player is positioned via left+transform so it centres the face (at 37.7% of
-   PNG width) exactly on screen regardless of device size. height:dvh drives
-   scale; width:auto preserves aspect ratio; overflow:hidden on #splash clips
-   the wide transparent wings cleanly with no hard rectangular edge. */
 .splash-bg-img {
   position: absolute;
   left: 50%;
   bottom: -2dvh;
-  transform: translateX(-38%);
-  height: 62dvh;
+  transform: translateX(-50%);
+  height: clamp(440px, 58dvh, 620px);
   width: auto;
   z-index: 1;
   pointer-events: none;
 }
 @media (max-height: 700px) {
-  .splash-bg-img { height: 58dvh; bottom: -1dvh; }
+  .splash-bg-img { height: clamp(380px, 52dvh, 520px); bottom: -1dvh; }
 }
 @media (min-width: 768px) {
-  .splash-bg-img { height: 68dvh; bottom: 0; }
+  .splash-bg-img { height: clamp(480px, 65dvh, 720px); bottom: 0; }
 }
 .splash-logo-wrap {
   position: absolute;
