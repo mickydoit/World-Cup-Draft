@@ -139,7 +139,7 @@ a:hover { text-decoration: underline; }
   position: absolute;
   bottom: 0; left: 0; right: 0;
   height: 67%;
-  object-fit: cover; object-position: 35% top;
+  object-fit: cover; object-position: center top;
   z-index: 1;
 }
 .splash-logo-wrap {
