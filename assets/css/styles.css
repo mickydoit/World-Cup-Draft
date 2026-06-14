@@ -138,21 +138,21 @@ a:hover { text-decoration: underline; }
 .splash-bg-img {
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: 58%;
-  object-fit: cover; object-position: center center;
+  height: 67%;
+  object-fit: cover; object-position: center top;
   z-index: 1;
 }
 .splash-logo-wrap {
   position: absolute;
-  left: 50%; top: 27%;
+  left: 50%; top: 20%;
   transform: translate(-50%, -50%);
   z-index: 2;
 }
 .splash-logo-img {
-  height: 90px; width: auto;
+  height: 80px; width: auto;
 }
 .splash-bar-track {
-  position: absolute; top: 39%;
+  position: absolute; top: 31%;
   left: 50%; transform: translateX(-50%);
   width: 40%; height: 5px;
   border-radius: 999px; background: rgba(0,0,0,.10); overflow: hidden;
