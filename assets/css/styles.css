@@ -155,7 +155,12 @@ a:hover { text-decoration: underline; }
   .splash-bg-img { height: clamp(380px, 52dvh, 520px); bottom: -1dvh; }
 }
 @media (min-width: 768px) {
-  .splash-bg-img { height: clamp(480px, 65dvh, 720px); bottom: 0; }
+  .splash-bg-img {
+    bottom: auto;
+    top: 32%;
+    height: 78dvh;
+    transform: translateX(-50%);
+  }
 }
 @media (max-width: 767px) {
   .splash-bg-img { transform: translateX(-56%); }

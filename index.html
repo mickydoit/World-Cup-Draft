@@ -22,7 +22,7 @@
   <!-- Cache-bust: redirect to a versioned URL so stale cached pages reload once -->
   <script>
     (function () {
-      var V = '56';
+      var V = '57';
       try {
         if (localStorage.getItem('_lbhv') !== V) {
           localStorage.setItem('_lbhv', V);
@@ -37,7 +37,10 @@
 </head>
 <body data-route="ladder" data-theme="dark">
   <div id="splash">
-    <img class="splash-bg-img" src="assets/img/splash-player.png" alt="" />
+    <picture>
+      <source media="(min-width: 768px)" srcset="assets/img/splash-player-web.svg" />
+      <img class="splash-bg-img" src="assets/img/splash-player.png" alt="" />
+    </picture>
     <div class="splash-logo-wrap">
       <img src="assets/img/logo-black.svg" class="splash-logo-img" alt="LBH Draft 2026" />
     </div>
