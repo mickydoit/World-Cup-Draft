@@ -351,10 +351,10 @@ const MIN_SPLASH = 4000;
 const hideSplash = () => {
   if (!splashEl || splashEl.classList.contains('splash-out')) return;
   splashEl.classList.add('splash-out');
-  setTimeout(() => splashEl.remove(), 520);
+  setTimeout(() => splashEl.remove(), 700);
 };
-const splashGuard = setTimeout(hideSplash, 6000); // failsafe
+// Hard cap fires just after the bar animation ends — no hung fetch can keep the splash up
+setTimeout(hideSplash, MIN_SPLASH + 400);
 render({ scrollToCurrent: true }).finally(() => {
-  clearTimeout(splashGuard);
   setTimeout(hideSplash, Math.max(0, MIN_SPLASH - (Date.now() - splashT0)));
 });
