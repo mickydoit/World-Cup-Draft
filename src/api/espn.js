@@ -26,6 +26,7 @@ export function normalizeMatch(event) {
 
   const status = comp.status?.type;
   const finished = status?.completed === true;
+  const inProgress = status?.state === 'in';
   const home = comp.competitors?.find((c) => c.homeAway === 'home');
   const away = comp.competitors?.find((c) => c.homeAway === 'away');
   if (!home || !away) return null;
@@ -53,9 +54,10 @@ export function normalizeMatch(event) {
       name: normalizeTeamName(away.team?.displayName || ''),
       code: away.team?.abbreviation || null,
     },
-    homeScore: finished ? homeScore : null,
-    awayScore: finished ? awayScore : null,
+    homeScore: (finished || inProgress) ? homeScore : null,
+    awayScore: (finished || inProgress) ? awayScore : null,
     winnerSide,
+    inProgress,
     finished,
   };
 }
