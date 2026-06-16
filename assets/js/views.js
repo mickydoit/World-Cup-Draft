@@ -35,13 +35,16 @@ export function renderFixtures(groups) {
   if (!groups.length) return `<h1>Fixtures</h1><p class="hint">No fixtures yet.</p>`;
 
   const card = (f) => {
-    const scored = f.status === 'finished';
-    const isDraw = scored && f.winner_team_id == null;
+    const isLive = f.status === 'live';
+    const isFinished = f.status === 'finished';
+    const scored = isFinished || isLive;
+    const isDraw = isFinished && f.winner_team_id == null;
     const sep = scored ? `${f.home_score}&ndash;${f.away_score}` : 'v';
+    const liveDot = isLive ? `<span class="live-dot"></span>` : '';
     return `
-    <div id="fx-${f.id}" class="fixture-card ${scored ? 'played' : ''}">
+    <div id="fx-${f.id}" class="fixture-card${isFinished ? ' played' : isLive ? ' live' : ''}">
       <div class="fxc-top">
-        <span class="fxc-time">${esc(f.time_label || 'TBC')}</span>
+        <span class="fxc-time">${esc(f.time_label || 'TBC')}${liveDot}</span>
         <span class="fxc-group">${esc(f.stage_label || '')}</span>
       </div>
       <div class="fxc-match">
@@ -75,11 +78,14 @@ export function renderFixtures(groups) {
   const renderGroup = (g) => {
     const played = g.fixtures.filter(f => f.status === 'finished').length;
     const total = g.fixtures.length;
+    const liveCount = g.fixtures.filter(f => f.status === 'live').length;
     const badge = g.allPlayed
       ? `<span class="fxday-badge done">All played</span>`
-      : played > 0
-        ? `<span class="fxday-badge">${played}/${total} played</span>`
-        : `<span class="fxday-badge">${total} match${total !== 1 ? 'es' : ''}</span>`;
+      : liveCount > 0
+        ? `<span class="fxday-badge live-badge">${liveCount} LIVE</span>`
+        : played > 0
+          ? `<span class="fxday-badge">${played}/${total} played</span>`
+          : `<span class="fxday-badge">${total} match${total !== 1 ? 'es' : ''}</span>`;
     // Fully-played days keep their place in date order but dim and stay
     // collapsed (the `done` class); the live day opens.
     const isOpen = g.title === activeTitle;
@@ -94,6 +100,12 @@ export function renderFixtures(groups) {
   };
 
   return `
+  <style>
+    .fixture-card.live{border-color:#e5564b}
+    .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5564b;vertical-align:middle;margin-left:5px;animation:livepulse 1.2s ease-in-out infinite}
+    .fxday-badge.live-badge{color:#e5564b}
+    @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.15}}
+  </style>
   <h1>Fixtures</h1>
   <p class="hint">Times shown in AEST. Owner names appear once the draft is complete.</p>
   ${groups.map(renderGroup).join('')}
