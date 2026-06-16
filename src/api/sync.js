@@ -245,7 +245,7 @@ async function syncScoresFromEspn(matches) {
 
   let updated = 0;
   for (const m of matches) {
-    if (!m.finished || m.homeScore == null || m.awayScore == null) continue;
+    if ((!m.finished && !m.inProgress) || m.homeScore == null || m.awayScore == null) continue;
 
     const homeId = idByName.get(m.home.name.toLowerCase());
     const awayId = idByName.get(m.away.name.toLowerCase());
@@ -259,14 +259,24 @@ async function syncScoresFromEspn(matches) {
     ).rows[0];
     if (!fx) continue;
 
-    const wId = winnerTeamId(m, homeId, awayId);
-    await query(
-      `UPDATE fixtures
-          SET home_score = $1, away_score = $2, winner_team_id = $3,
-              status = 'finished', updated_at = now()
-        WHERE id = $4`,
-      [m.homeScore, m.awayScore, wId, fx.id]
-    );
+    if (m.finished) {
+      const wId = winnerTeamId(m, homeId, awayId);
+      await query(
+        `UPDATE fixtures
+            SET home_score = $1, away_score = $2, winner_team_id = $3,
+                status = 'finished', updated_at = now()
+          WHERE id = $4`,
+        [m.homeScore, m.awayScore, wId, fx.id]
+      );
+    } else {
+      // In-progress: write current score but never overwrite a finished result
+      await query(
+        `UPDATE fixtures
+            SET home_score = $1, away_score = $2, status = 'live', updated_at = now()
+          WHERE id = $3 AND status != 'finished'`,
+        [m.homeScore, m.awayScore, fx.id]
+      );
+    }
     updated += 1;
   }
   return { updated, inserted: 0 };
