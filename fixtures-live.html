@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111111" />
+  <title>Fixtures (Live) · LBH Draft</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=72" />
+  <style>
+    .fixture-card.live {{ border-color: #e5564b; }}
+    .fxday-badge.live-badge {{ color: #e5564b; }}
+    .live-dot {{
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: #e5564b; vertical-align: middle; margin-left: 5px;
+      animation: livepulse 1.2s ease-in-out infinite;
+    }}
+    .live-page-tag {{
+      font-size: 0.55em; font-weight: 700; background: #e5564b; color: #fff;
+      border-radius: 4px; padding: 2px 6px; margin-left: 8px;
+      letter-spacing: 0.05em; vertical-align: middle;
+    }}
+    @keyframes livepulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.15; }} }}
+  </style>
+  <script src="config.js"></script>
+</head>
+<body data-route="fixtures" data-theme="dark">
+
+  <header class="topbar">
+    <a class="brand" href="./">
+      <img class="brand-logo-img" src="assets/img/logo-black.svg" alt="LBH Draft" width="80" height="36" />
+    </a>
+    <nav class="topbar-nav">
+      <a href="./">Ladder</a>
+      <a href="./#/fixtures">Fixtures</a>
+      <a href="./#/draft">Teams</a>
+      <a href="./#/bracket">Bracket</a>
+      <a href="./#/stats">Stats</a>
+    </nav>
+  </header>
+
+  <main class="container" id="app">
+    <p class="hint">Loading…</p>
+  </main>
+
+  <script type="module">
+    const cfg = window.LBH_CONFIG || {{}};
+    const URL_BASE = (cfg.SUPABASE_URL || '').replace(/\/+$/, '');
+    const KEY = cfg.SUPABASE_ANON_KEY || '';
+    const REST = `${{URL_BASE}}/rest/v1`;
+
+    const DISPLAY_TZ = 'Australia/Sydney';
+    const DATE_FMT = new Intl.DateTimeFormat('en-AU', {{ weekday: 'short', day: 'numeric', month: 'short', timeZone: DISPLAY_TZ }});
+    const TIME_FMT = new Intl.DateTimeFormat('en-AU', {{ hour: '2-digit', minute: '2-digit', hour12: false, timeZone: DISPLAY_TZ }});
+    const STAGE_LABEL = {{ R32: 'Round of 32', R16: 'Round of 16', QF: 'Quarter-final', SF: 'Semi-final', third: '3rd place', final: 'Final' }};
+
+    const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));
+
+    async function sbGet(table, qs = 'select=*') {{
+      const res = await fetch(`${{REST}}/${{table}}?${{qs}}`, {{
+        headers: {{ apikey: KEY, Authorization: `Bearer ${{KEY}}` }}
+      }});
+      if (!res.ok) throw new Error(`Supabase error ${{res.status}}`);
+      return res.json();
+    }}
+
+    async function loadAll() {{
+      const [fixtures, teams, picks, players] = await Promise.all([
+        sbGet('fixtures', 'select=*&order=kickoff.asc.nullslast,id.asc'),
+        sbGet('teams', 'select=id,name,code'),
+        sbGet('picks', 'select=team_id,player_id'),
+        sbGet('players', 'select=id,name'),
+      ]);
+      return {{ fixtures, teams, picks, players }};
+    }}
+
+    async function loadScores() {{
+      return sbGet('fixtures', 'select=id,status,home_score,away_score,winner_team_id');
+    }}
+
+    function buildGroups({{ fixtures, teams, picks, players }}) {{
+      const teamById = Object.fromEntries(teams.map(t => [t.id, t]));
+      const playerById = Object.fromEntries(players.map(p => [p.id, p]));
+      const ownerByTeam = Object.fromEntries(picks.map(p => [p.team_id, playerById[p.player_id]?.name || null]));
+
+      const sorted = [...fixtures].sort((a, b) => {{
+        const ka = a.kickoff ? Date.parse(a.kickoff) : Infinity;
+        const kb = b.kickoff ? Date.parse(b.kickoff) : Infinity;
+        return ka - kb || a.id - b.id;
+      }});
+
+      const decorated = sorted.map(f => {{
+        const d = f.kickoff ? new Date(f.kickoff) : null;
+        const home = teamById[f.home_team_id] || {{}};
+        const away = teamById[f.away_team_id] || {{}};
+        return {{
+          ...f,
+          home_name: home.name,
+          away_name: away.name,
+          home_owner: ownerByTeam[f.home_team_id] || null,
+          away_owner: ownerByTeam[f.away_team_id] || null,
+          home_is_winner: f.winner_team_id != null && f.winner_team_id === f.home_team_id,
+          away_is_winner: f.winner_team_id != null && f.winner_team_id === f.away_team_id,
+          time_label: d ? TIME_FMT.format(d) : '',
+          date_label: d ? DATE_FMT.format(d) : 'Date TBC',
+          date_ts: d ? d.getTime() : null,
+          stage_label: f.stage === 'group' ? `Group ${{f.grp}}` : (STAGE_LABEL[f.stage] || f.stage),
+        }};
+      }});
+
+      const groupMap = {{}};
+      for (const f of decorated) (groupMap[f.date_label] ||= []).push(f);
+      return Object.entries(groupMap).map(([title, items]) => ({{
+        title,
+        fixtures: items,
+        allPlayed: items.every(f => f.status === 'finished'),
+        date_ts: items[0]?.date_ts || null,
+      }}));
+    }}
+
+    function renderCard(f) {{
+      const isLive = f.status === 'live';
+      const isFinished = f.status === 'finished';
+      const scored = (isLive || isFinished) && f.home_score != null && f.away_score != null;
+      const isDraw = isFinished && scored && f.winner_team_id == null;
+      const sep = scored ? `${{f.home_score}}&ndash;${{f.away_score}}` : 'v';
+      const liveDot = isLive ? `<span class="live-dot"></span>` : '';
+      const cardClass = isFinished ? 'fixture-card played' : isLive ? 'fixture-card live' : 'fixture-card';
+      return `
+      <div id="fx-${{f.id}}" class="${{cardClass}}">
+        <div class="fxc-top">
+          <span class="fxc-time">${{esc(f.time_label || 'TBC')}}${{liveDot}}</span>
+          <span class="fxc-group">${{esc(f.stage_label || '')}}</span>
+        </div>
+        <div class="fxc-match">
+          <span class="fxc-team">${{esc(f.home_name || 'TBD')}}</span>
+          <span class="fxc-sep">${{sep}}</span>
+          <span class="fxc-team">${{esc(f.away_name || 'TBD')}}</span>
+        </div>
+        <div class="fxc-owners">
+          <span class="fxc-owner ${{f.home_is_winner ? 'winner' : isDraw ? 'draw' : ''}} ${{!f.home_owner ? 'dim' : ''}}">${{esc(f.home_owner || '—')}}</span>
+          <span class="fxc-vs">vs</span>
+          <span class="fxc-owner ${{f.away_is_winner ? 'winner' : isDraw ? 'draw' : ''}} ${{!f.away_owner ? 'dim' : ''}}">${{esc(f.away_owner || '—')}}</span>
+        </div>
+      </div>`;
+    }}
+
+    function pickActiveTitle(groups) {{
+      const now = Date.now();
+      let active = null;
+      for (const g of groups) {{
+        const hasStarted = g.date_ts != null && g.date_ts <= now + 2 * 3600 * 1000;
+        const hasAnyLive = g.fixtures.some(f => f.status === 'live');
+        const hasAnyPlayed = g.fixtures.some(f => f.status === 'finished');
+        if ((hasStarted || hasAnyPlayed || hasAnyLive) && !g.allPlayed) active = g.title;
+      }}
+      if (!active) {{
+        const next = groups.find(g => !g.allPlayed && g.date_ts != null && g.date_ts > now);
+        active = next ? next.title : ((groups.find(g => !g.allPlayed) || {{}}).title ?? null);
+      }}
+      return active;
+    }}
+
+    function renderBadge(g) {{
+      const playedCount = g.fixtures.filter(f => f.status === 'finished').length;
+      const liveCount = g.fixtures.filter(f => f.status === 'live').length;
+      const total = g.fixtures.length;
+      if (g.allPlayed) return `<span class="fxday-badge done">All played</span>`;
+      if (liveCount > 0) return `<span class="fxday-badge live-badge">${{liveCount}} LIVE</span>`;
+      if (playedCount > 0) return `<span class="fxday-badge">${{playedCount}}/${{total}} played</span>`;
+      return `<span class="fxday-badge">${{total}} match${{total !== 1 ? 'es' : ''}}</span>`;
+    }}
+
+    function renderGroups(groups) {{
+      const activeTitle = pickActiveTitle(groups);
+      return groups.map(g => {{
+        const isOpen = g.title === activeTitle;
+        return `
+        <details class="fxday${{g.allPlayed ? ' done' : ''}}" data-group="${{esc(g.title)}}"${{isOpen ? ' open' : ''}}>
+          <summary class="fxday-header">
+            <span class="fxday-title">${{esc(g.title)}}</span>
+            ${{renderBadge(g)}}
+          </summary>
+          <div class="fxday-body">${{g.fixtures.map(renderCard).join('')}}</div>
+        </details>`;
+      }}).join('');
+    }}
+
+    const app = document.getElementById('app');
+
+    async function init() {{
+      try {{
+        const data = await loadAll();
+        const groups = buildGroups(data);
+        app.innerHTML = `
+          <h1>Fixtures <span class="live-page-tag">LIVE TEST</span></h1>
+          <p class="hint">Scores update every 30 s. Times in AEST. &nbsp;<a href="./#/fixtures" style="opacity:.55">← Back to main app</a></p>
+          ${{renderGroups(groups)}}
+          <div class="view-btn-wrap"><a class="view-btn" href="./#/">View Ladder</a></div>`;
+      }} catch (err) {{
+        app.innerHTML = `<p class="hint" style="color:#e5564b">Failed to load: ${{esc(err.message)}}</p>`;
+      }}
+    }}
+
+    async function pollScores() {{
+      try {{
+        const scores = await loadScores();
+        for (const s of scores) {{
+          const el = document.getElementById('fx-' + s.id);
+          if (!el) continue;
+
+          const isLive = s.status === 'live';
+          const isFinished = s.status === 'finished';
+          const scored = (isLive || isFinished) && s.home_score != null && s.away_score != null;
+          const isDraw = isFinished && scored && s.winner_team_id == null;
+
+          const sep = el.querySelector('.fxc-sep');
+          if (sep) sep.innerHTML = scored ? `${{s.home_score}}&ndash;${{s.away_score}}` : 'v';
+
+          el.classList.toggle('played', isFinished);
+          el.classList.toggle('live', isLive);
+
+          const ownerEls = el.querySelectorAll('.fxc-owner');
+          if (ownerEls.length >= 2 && isFinished && scored) {{
+            const [homeEl, , awayEl] = ownerEls;
+            homeEl?.classList.toggle('winner', s.winner_team_id != null && s.winner_team_id === s.home_team_id);
+            homeEl?.classList.toggle('draw', isDraw);
+            awayEl?.classList.toggle('winner', s.winner_team_id != null && s.winner_team_id === s.away_team_id);
+            awayEl?.classList.toggle('draw', isDraw);
+          }}
+
+          const timeEl = el.querySelector('.fxc-time');
+          if (timeEl) {{
+            const dot = timeEl.querySelector('.live-dot');
+            if (isLive && !dot) {{
+              const d = document.createElement('span');
+              d.className = 'live-dot';
+              timeEl.appendChild(d);
+            }} else if (!isLive && dot) {{
+              dot.remove();
+            }}
+          }}
+        }}
+
+        document.querySelectorAll('.fxday').forEach(day => {{
+          const cards = day.querySelectorAll('.fixture-card');
+          const total = cards.length;
+          if (!total) return;
+          const playedCount = day.querySelectorAll('.fixture-card.played').length;
+          const liveCount = day.querySelectorAll('.fixture-card.live').length;
+          const allPlayed = playedCount === total;
+          day.classList.toggle('done', allPlayed);
+          const badge = day.querySelector('.fxday-badge');
+          if (!badge) return;
+          if (allPlayed) {{ badge.className = 'fxday-badge done'; badge.textContent = 'All played'; }}
+          else if (liveCount > 0) {{ badge.className = 'fxday-badge live-badge'; badge.textContent = `${{liveCount}} LIVE`; }}
+          else if (playedCount > 0) {{ badge.className = 'fxday-badge'; badge.textContent = `${{playedCount}}/${{total}} played`; }}
+        }});
+      }} catch {{
+        // silent — stale data is fine
+      }}
+    }}
+
+    await init();
+    setInterval(pollScores, 30000);
+  </script>
+
+</body>
+</html>
