@@ -3,7 +3,7 @@
 
 import { store } from './store.js?v=5';
 import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView } from './compute.js?v=38';
-import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView } from './views.js?v=38';
+import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView } from './views.js?v=39';
 
 const root = document.getElementById('root');
 const PASSWORD = (window.LBH_CONFIG || {}).ADMIN_PASSWORD || 'admin';
