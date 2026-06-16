@@ -215,7 +215,7 @@ function scrollToCurrentMatch(route) {
 function setAutoRefresh(route) {
   if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
   if (route === '/' || route === '/fixtures') {
-    refreshTimer = setInterval(() => { if (currentRoute() === route) render(); }, 60000);
+    refreshTimer = setInterval(() => { if (currentRoute() === route) render(); }, route === '/fixtures' ? 30000 : 60000);
   } else if (route === '/draft') {
     // Waiting players poll so picks appear live; the person mid-pick isn't yanked.
     refreshTimer = setInterval(() => { if (currentRoute() === '/draft' && !draftMyTurn) render(); }, 3500);
