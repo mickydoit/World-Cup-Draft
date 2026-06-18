@@ -1017,7 +1017,7 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
 }
 .fxc-time {
   font-family: var(--font); font-weight: 800; font-size: .82rem;
-  color: #202123; letter-spacing: .04em;
+  color: #202123; letter-spacing: .04em; display:inline-flex; align-items:center;
 }
 .fxc-group {
   font-family: var(--font); font-weight: 700; font-size: .75rem;
