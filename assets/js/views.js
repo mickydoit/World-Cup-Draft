@@ -7,10 +7,12 @@ const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&':
 // ---------------------------------------------------------------- Ladder
 export function renderLadder(ladder, groups = []) {
   const initials = (name) => name ? name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() : '?';
-  const movHtml = (m) => {
+  const movHtml = (m, cur) => {
+    // Shows the previous rank (where the player came from), not places moved.
+    // m = prevRank - currentRank, so prevRank = cur + m.
     if (m == null) return '<span class="lm-nc">—</span>';
-    if (m > 0) return `<span class="lm-up">▲ ${m}</span>`;
-    if (m < 0) return `<span class="lm-dn">▼ ${Math.abs(m)}</span>`;
+    if (m > 0) return `<span class="lm-up">▲ ${cur + m}</span>`;
+    if (m < 0) return `<span class="lm-dn">▼ ${cur + m}</span>`;
     return '<span class="lm-nc">—</span>';
   };
   const wcBlock = groups.length ? `
@@ -60,7 +62,7 @@ export function renderLadder(ladder, groups = []) {
     ${ladder.map((p, i) => `
       <a href="#/draft/player/${p.id}" class="ladder-row ${i === 0 ? 'leader' : ''}">
         <span class="ladder-rank">${i + 1}</span>
-        <span class="ladder-move">${movHtml(p.movement)}</span>
+        <span class="ladder-move">${movHtml(p.movement, i + 1)}</span>
         <span class="ladder-avatar">${initials(p.name)}</span>
         <span class="ladder-name">${esc(p.name)}</span>
         <span class="ladder-teams">${p.teamCount}</span>
