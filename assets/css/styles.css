@@ -431,11 +431,11 @@ hr { border:none; border-top:1px solid var(--border); margin:1rem 0; width:100%;
 
 /* ---- LADDER — gradient pill rows ---- */
 
-/* Shared grid — 5 cols: rank | avatar | name | teams | pts */
+/* Shared grid — 6 cols: rank | move | avatar | name | teams | pts */
 .ladder-row,
 .ladder-header {
   display: grid;
-  grid-template-columns: 2.6rem 2.5rem 1fr 5.5rem 4.5rem;
+  grid-template-columns: 2.2rem 2.6rem 2.5rem 1fr 5.5rem 4.5rem;
   align-items: center;
   padding-left: .9rem;
   padding-right: .9rem;
@@ -447,6 +447,7 @@ hr { border:none; border-top:1px solid var(--border); margin:1rem 0; width:100%;
   text-transform: uppercase; letter-spacing: .12em; color: var(--text-3);
 }
 .ladder-header .lh-rank  { text-align: center; }
+.ladder-header .lh-move  { /* movement indicator header */ }
 .ladder-header .lh-avatar { /* empty */ }
 .ladder-header .lh-name  { padding-left: .35rem; }
 .ladder-header .lh-teams { text-align: left; }
@@ -492,6 +493,53 @@ hr { border:none; border-top:1px solid var(--border); margin:1rem 0; width:100%;
 }
 .ladder-teams { text-align: left; font-family: var(--font); font-size: 1.15rem; font-weight: 800; }
 .ladder-pts   { text-align: right;  font-family: var(--font); font-size: 1.25rem; font-weight: 900; }
+
+/* ---- MOVEMENT INDICATORS ---- */
+.ladder-move { display: flex; align-items: center; }
+.lm-up, .lm-dn, .lm-nc {
+  font-family: var(--font); font-size: .72rem; font-weight: 800; letter-spacing: -.01em;
+  color: rgba(255,255,255,.8); white-space: nowrap;
+}
+
+/* ---- WC GROUP STANDINGS ---- */
+.wcs-wrap { margin-top: 2.5rem; }
+.wcs-title {
+  font-family: var(--font); font-size: 1rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--h1-color); margin-bottom: 1rem;
+}
+.wcs-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .85rem; }
+.wcs-group { background: var(--bg-2); border: 1px solid var(--border-em); border-radius: var(--r); overflow: hidden; }
+.wcs-chip {
+  display: block; padding: .4rem .75rem;
+  font-family: var(--font); font-size: .68rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--h1-color); border-bottom: 1px solid var(--border);
+}
+.wcs-table { padding: 0 .5rem .25rem; }
+.wcs-row {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr 1.6rem 1.6rem 1.6rem 1.6rem 2rem 2rem;
+  align-items: center; gap: .1rem;
+  padding: .3rem .2rem;
+  border-bottom: 1px solid var(--border);
+}
+.wcs-row:last-child { border-bottom: none; }
+.wcs-head {
+  font-family: var(--font); font-size: .65rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--text-3);
+}
+.wcs-pos { font-family: var(--font); font-size: .78rem; font-weight: 800; text-align: center; color: var(--text-2); }
+.wcs-team { font-family: var(--font); font-size: .78rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wcs-num { font-family: var(--font); font-size: .78rem; font-weight: 700; text-align: right; }
+.wcs-wdl { color: var(--text-3); }
+.wcs-gd { color: var(--text-2); }
+.wcs-pts { color: var(--h1-color); font-weight: 900; }
+.wcs-qualify .wcs-pos { color: var(--h1-color); }
+@media (max-width: 420px) {
+  .wcs-wdl { display: none; }
+  .wcs-row { grid-template-columns: 1.4rem 1fr 1.6rem 2rem 2rem; }
+}
 
 /* ---- FIXTURES — gradient pill rows ---- */
 .fxgroup { margin-bottom: 2rem; }
@@ -861,7 +909,7 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
   /* Ladder: tighter columns */
   .ladder-row,
   .ladder-header {
-    grid-template-columns: 2rem 2.1rem 1fr 4.2rem 3.8rem;
+    grid-template-columns: 1.8rem 2.4rem 2.1rem 1fr 4.2rem 3.8rem;
     padding-left: .65rem;
     padding-right: .65rem;
   }
@@ -907,7 +955,7 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
   }
   .ladder-row,
   .ladder-header {
-    grid-template-columns: 1.8rem 2rem 1fr 3.8rem 3.4rem;
+    grid-template-columns: 1.6rem 2.2rem 2rem 1fr 3.8rem 3.4rem;
   }
   .fixture { grid-template-columns: 3rem 1fr 4.5rem; }
   .fixture .fx-when { font-size: .58rem; }
