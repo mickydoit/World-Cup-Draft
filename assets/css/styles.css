@@ -131,64 +131,61 @@ a:hover { text-decoration: underline; }
 /* ---- SPLASH / LOADING SCREEN ---- */
 #splash {
   position: fixed; inset: 0; z-index: 9999;
-  background: linear-gradient(135deg, #FCDB00 0%, #C9C120 50%, #7CAD2A 100%);
+  background: #000;
   overflow: hidden;
   transition: opacity 0.6s ease;
 }
 #splash.splash-out { opacity: 0; pointer-events: none; }
-.splash-bg-img {
-  position: absolute;
-  left: 50%;
-  bottom: -2dvh;
-  transform: translateX(-50%);
-  height: clamp(440px, 58dvh, 620px);
-  width: auto;
-  z-index: 1;
+.splash-bg-tiles {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  z-index: 0;
   pointer-events: none;
-  opacity: 0;
-  animation: splash-img-in 0.7s ease-out 0.15s forwards;
 }
-@keyframes splash-img-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@media (max-height: 700px) {
-  .splash-bg-img { height: clamp(380px, 52dvh, 520px); bottom: -1dvh; }
-}
-@media (min-width: 768px) {
-  .splash-bg-img {
-    bottom: auto;
-    top: 32%;
-    height: 78dvh;
-    transform: translateX(-50%);
-  }
-}
-@media (max-width: 767px) {
-  .splash-bg-img { transform: translateX(-56%); }
-}
-.splash-logo-wrap {
+.splash-header {
   position: absolute;
-  left: 50%; top: 20%;
-  transform: translate(-50%, -50%);
-  z-index: 2;
+  top: 13%;
+  left: 50%; transform: translateX(-50%);
+  z-index: 3;
 }
 .splash-logo-img {
-  height: 80px; width: auto;
+  height: 50px; width: auto;
+  filter: brightness(0) invert(1);
 }
 .splash-bar-track {
-  position: absolute; top: 31%;
+  position: absolute; top: 24%;
   left: 50%; transform: translateX(-50%);
-  width: 40%; height: 5px;
-  border-radius: 999px; background: rgba(0,0,0,.10); overflow: hidden;
-  z-index: 2;
+  width: 176px; height: 8px;
+  border-radius: 999px; overflow: hidden;
+  z-index: 3;
 }
 .splash-bar {
   height: 100%; border-radius: 999px;
-  background: linear-gradient(90deg, #a8ff00, #39ff14);
+  background: linear-gradient(90deg, #FF0000, #FFFFFF);
   transform: scaleX(0); transform-origin: left;
   animation: splash-load 4s cubic-bezier(.4,0,.2,1) forwards;
 }
 @keyframes splash-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.splash-behind {
+  position: absolute;
+  left: 50%; top: 33%;
+  transform: translateX(-54%);
+  width: clamp(220px, 65vw, 340px);
+  height: auto;
+  z-index: 1;
+  pointer-events: none;
+}
+.splash-player-img {
+  position: absolute;
+  left: 50%; top: 28%;
+  transform: translateX(-50%);
+  width: clamp(200px, 60vw, 310px);
+  height: auto;
+  z-index: 2;
+  pointer-events: none;
+}
 
 /* ---- TOPBAR ---- */
 .topbar {
