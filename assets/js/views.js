@@ -44,7 +44,7 @@ export function renderFixtures(groups) {
     return `
     <div id="fx-${f.id}" class="fixture-card${isFinished ? ' played' : isLive ? ' live' : ''}">
       <div class="fxc-top">
-        <span class="fxc-time">${esc(f.time_label || 'TBC')}${liveDot}</span>
+        <span class="fxc-time-row"><span class="fxc-time">${esc(f.time_label || 'TBC')}</span>${liveDot}</span>
         <span class="fxc-group">${esc(f.stage_label || '')}</span>
       </div>
       <div class="fxc-match">
@@ -102,7 +102,8 @@ export function renderFixtures(groups) {
   return `
   <style>
     .fixture-card.live{border-color:#e5564b}
-    .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5564b;margin-left:5px;animation:livepulse 1.2s ease-in-out infinite}
+    .fxc-time-row{display:inline-flex;align-items:center;gap:6px;line-height:1}
+    .live-dot{width:8px;height:8px;border-radius:50%;background:#e5564b;flex:0 0 auto;animation:livepulse 1.2s ease-in-out infinite}
     .fxday-badge.live-badge{color:#e5564b}
     @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.15}}
   </style>
