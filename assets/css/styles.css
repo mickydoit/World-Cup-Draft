@@ -170,21 +170,33 @@ a:hover { text-decoration: underline; }
 @keyframes splash-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .splash-behind {
   position: absolute;
-  left: 50%; top: 33%;
+  left: 50%;
+  bottom: -1dvh;
   transform: translateX(-54%);
-  width: clamp(220px, 65vw, 340px);
-  height: auto;
+  height: clamp(300px, 50dvh, 520px);
+  width: auto;
   z-index: 1;
   pointer-events: none;
 }
 .splash-player-img {
   position: absolute;
-  left: 50%; top: 28%;
+  left: 50%;
+  bottom: -2dvh;
   transform: translateX(-50%);
-  width: clamp(200px, 60vw, 310px);
-  height: auto;
+  height: clamp(360px, 58dvh, 580px);
+  width: auto;
   z-index: 2;
   pointer-events: none;
+  opacity: 0;
+  animation: splash-img-in 0.7s ease-out 0.15s forwards;
+}
+@keyframes splash-img-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@media (max-height: 700px) {
+  .splash-player-img { height: clamp(300px, 50dvh, 460px); }
+  .splash-behind     { height: clamp(260px, 44dvh, 400px); }
 }
 
 /* ---- TOPBAR ---- */
