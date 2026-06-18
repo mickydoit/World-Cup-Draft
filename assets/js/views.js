@@ -5,12 +5,52 @@
 const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // ---------------------------------------------------------------- Ladder
-export function renderLadder(ladder) {
+export function renderLadder(ladder, groups = []) {
   const initials = (name) => name ? name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() : '?';
+  const movHtml = (m) => {
+    if (m == null) return '<span class="lm-nc">—</span>';
+    if (m > 0) return `<span class="lm-up">▲ ${m}</span>`;
+    if (m < 0) return `<span class="lm-dn">▼ ${Math.abs(m)}</span>`;
+    return '<span class="lm-nc">—</span>';
+  };
+  const wcBlock = groups.length ? `
+  <div class="wcs-wrap">
+    <h2 class="wcs-title">World Cup Standings</h2>
+    <div class="wcs-groups">
+      ${groups.map(g => `
+        <div class="wcs-group">
+          <span class="wcs-chip">Group ${esc(g.grp)}</span>
+          <div class="wcs-table">
+            <div class="wcs-row wcs-head">
+              <span class="wcs-pos">#</span>
+              <span class="wcs-team">Team</span>
+              <span class="wcs-num">P</span>
+              <span class="wcs-num wcs-wdl">W</span>
+              <span class="wcs-num wcs-wdl">D</span>
+              <span class="wcs-num wcs-wdl">L</span>
+              <span class="wcs-num wcs-gd">GD</span>
+              <span class="wcs-num wcs-pts">Pts</span>
+            </div>
+            ${g.teams.map((t, i) => `
+            <div class="wcs-row${i < 2 && t.Pts > 0 ? ' wcs-qualify' : ''}">
+              <span class="wcs-pos">${i + 1}</span>
+              <span class="wcs-team">${esc(t.name)}</span>
+              <span class="wcs-num">${t.P}</span>
+              <span class="wcs-num wcs-wdl">${t.W}</span>
+              <span class="wcs-num wcs-wdl">${t.D}</span>
+              <span class="wcs-num wcs-wdl">${t.L}</span>
+              <span class="wcs-num wcs-gd">${t.GD > 0 ? '+' : ''}${t.GD}</span>
+              <span class="wcs-num wcs-pts">${t.Pts}</span>
+            </div>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div>
+  </div>` : '';
   return `
   <h1>Ladder</h1>
   <div class="ladder-header">
     <span class="lh-rank">#</span>
+    <span class="lh-move"></span>
     <span class="lh-avatar"></span>
     <span class="lh-name">Player</span>
     <span class="lh-teams">Teams</span>
@@ -20,6 +60,7 @@ export function renderLadder(ladder) {
     ${ladder.map((p, i) => `
       <a href="#/draft/player/${p.id}" class="ladder-row ${i === 0 ? 'leader' : ''}">
         <span class="ladder-rank">${i + 1}</span>
+        <span class="ladder-move">${movHtml(p.movement)}</span>
         <span class="ladder-avatar">${initials(p.name)}</span>
         <span class="ladder-name">${esc(p.name)}</span>
         <span class="ladder-teams">${p.teamCount}</span>
@@ -27,7 +68,8 @@ export function renderLadder(ladder) {
       </a>`).join('')}
   </div>
   <p class="hint" style="margin-top:1rem">"Teams left" counts only your drafted nations still in the tournament. Points: group win = 1, draw = 0.5. Knockouts: R32 = 1, R16 = 2, QF = 3, SF = 4, Final = 5. Own both teams in a match? Any decisive result scores the full win, a draw scores 0.5.</p>
-  <div class="view-btn-wrap"><a class="view-btn" href="#/fixtures">View Fixtures</a></div>`;
+  <div class="view-btn-wrap"><a class="view-btn" href="#/fixtures">View Fixtures</a></div>
+  ${wcBlock}`;
 }
 
 // -------------------------------------------------------------- Fixtures
