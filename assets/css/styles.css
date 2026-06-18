@@ -172,7 +172,7 @@ a:hover { text-decoration: underline; }
   position: absolute;
   left: 50%;
   bottom: -1dvh;
-  transform: translateX(-54%);
+  transform: translateX(calc(-54% + 2px));
   height: clamp(300px, 50dvh, 520px);
   width: auto;
   z-index: 1;
