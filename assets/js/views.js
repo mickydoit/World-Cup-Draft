@@ -102,7 +102,7 @@ export function renderFixtures(groups) {
   return `
   <style>
     .fixture-card.live{border-color:#e5564b}
-    .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5564b;vertical-align:middle;margin-left:5px;position:relative;top:2px;animation:livepulse 1.2s ease-in-out infinite}
+    .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5564b;vertical-align:middle;margin-left:5px;animation:livepulse 1.2s ease-in-out infinite}
     .fxday-badge.live-badge{color:#e5564b}
     @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.15}}
   </style>
