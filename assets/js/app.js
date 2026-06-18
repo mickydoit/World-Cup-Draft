@@ -187,7 +187,7 @@ async function render(opts = {}) {
   setAutoRefresh(route);
   // On navigation (not the silent auto-refresh), jump to where the tournament
   // is up to so you don't have to scroll past weeks of finished games.
-  if (opts.scrollToCurrent && route === '/bracket') {
+  if (opts.scrollToCurrent && (route === '/bracket' || route === '/fixtures')) {
     scrollToCurrentMatch(route);
   }
 }
@@ -198,6 +198,21 @@ async function render(opts = {}) {
 function scrollToCurrentMatch(route) {
   const app = document.getElementById('app');
   if (!app) return;
+
+  if (route === '/fixtures') {
+    // Scroll to the open accordion section (the active date).
+    // Uses requestAnimationFrame so getBoundingClientRect() sees the fully-laid-out DOM.
+    // Called only on navigation (opts.scrollToCurrent), not on the 30s auto-refresh.
+    requestAnimationFrame(() => {
+      const openDay = app.querySelector('.fxday[open]');
+      if (!openDay) return;
+      const headerH = document.querySelector('.topbar')?.offsetHeight || 0;
+      const top = window.scrollY + openDay.getBoundingClientRect().top - headerH - 12;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    });
+    return;
+  }
+
   const sel = route === '/bracket' ? '.ko-match' : '.fixture-card';
   const played = app.querySelectorAll(`${sel}.played`);
   const target = played[played.length - 1];
