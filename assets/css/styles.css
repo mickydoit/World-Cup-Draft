@@ -143,12 +143,16 @@ a:hover { text-decoration: underline; }
   object-position: center top;
   z-index: 0;
   pointer-events: none;
+  opacity: 0;
+  animation: splash-img-in 0.5s ease-out forwards;
 }
 .splash-header {
   position: absolute;
   top: 13%;
   left: 50%; transform: translateX(-50%);
   z-index: 3;
+  opacity: 0;
+  animation: splash-img-in 0.4s ease-out 0.15s forwards;
 }
 .splash-logo-img {
   height: 50px; width: auto;
@@ -160,6 +164,8 @@ a:hover { text-decoration: underline; }
   width: 176px; height: 8px;
   border-radius: 999px; overflow: hidden;
   z-index: 3;
+  opacity: 0;
+  animation: splash-img-in 0.4s ease-out 0.2s forwards;
 }
 .splash-bar {
   height: 100%; border-radius: 999px;
@@ -177,6 +183,8 @@ a:hover { text-decoration: underline; }
   width: auto;
   z-index: 1;
   pointer-events: none;
+  opacity: 0;
+  animation: splash-img-in 0.55s ease-out 0.1s forwards;
 }
 .splash-player-img {
   position: absolute;
@@ -188,7 +196,7 @@ a:hover { text-decoration: underline; }
   z-index: 2;
   pointer-events: none;
   opacity: 0;
-  animation: splash-img-in 0.7s ease-out 0.15s forwards;
+  animation: splash-img-in 0.7s ease-out 0.2s forwards;
 }
 @keyframes splash-img-in {
   from { opacity: 0; }
