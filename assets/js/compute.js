@@ -184,9 +184,56 @@ export function getLadder(data) {
     if (alive(pick.team_id)) teamCounts[pick.player_id] = (teamCounts[pick.player_id] || 0) + 1;
   }
 
-  return [...data.players]
+  const current = [...data.players]
     .map((p) => ({ ...p, points: totals[p.id] ?? 0, teamCount: teamCounts[p.id] ?? 0 }))
     .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+
+  // Movement: compare current rank to rank before the last completed matchday
+  const finDates = [...new Set(
+    data.fixtures.filter(f => f.status === 'finished' && f.kickoff).map(f => f.kickoff.slice(0, 10))
+  )].sort();
+  let prevRankById = null;
+  if (finDates.length >= 2) {
+    const lastDate = finDates[finDates.length - 1];
+    const prevFin = data.fixtures
+      .filter(f => f.status === 'finished' && f.kickoff && f.kickoff.slice(0, 10) < lastDate)
+      .map(f => ({ id: f.id, stage: f.stage, homeTeamId: f.home_team_id, awayTeamId: f.away_team_id, homeScore: f.home_score, awayScore: f.away_score, winnerTeamId: f.winner_team_id }));
+    const prevTotals = computeLadder(prevFin, { ownership, stagePoints });
+    const prevRanked = [...data.players]
+      .map(p => ({ id: p.id, name: p.name, pts: prevTotals[p.id] ?? 0 }))
+      .sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name));
+    prevRankById = Object.fromEntries(prevRanked.map((p, i) => [p.id, i + 1]));
+  }
+
+  return current.map((p, i) => ({
+    ...p,
+    movement: prevRankById ? (prevRankById[p.id] ?? null) - (i + 1) : null,
+  }));
+}
+
+export function getGroupStandings(data) {
+  const stand = {};
+  for (const t of data.teams) {
+    stand[t.id] = { id: t.id, name: t.name, code: t.code, grp: t.grp, P:0, W:0, D:0, L:0, GF:0, GA:0, GD:0, Pts:0 };
+  }
+  for (const f of data.fixtures) {
+    if (f.stage !== 'group' || f.status !== 'finished' || f.home_score == null || f.away_score == null) continue;
+    const h = stand[f.home_team_id], a = stand[f.away_team_id];
+    if (!h || !a) continue;
+    h.P++; a.P++;
+    h.GF += f.home_score; h.GA += f.away_score;
+    a.GF += f.away_score; a.GA += f.home_score;
+    if (f.home_score > f.away_score) { h.W++; h.Pts += 3; a.L++; }
+    else if (f.home_score < f.away_score) { a.W++; a.Pts += 3; h.L++; }
+    else { h.D++; h.Pts++; a.D++; a.Pts++; }
+  }
+  for (const s of Object.values(stand)) s.GD = s.GF - s.GA;
+  const grpMap = {};
+  for (const s of Object.values(stand)) (grpMap[s.grp] ||= []).push(s);
+  for (const teams of Object.values(grpMap)) {
+    teams.sort((a, b) => b.Pts - a.Pts || b.GD - a.GD || b.GF - a.GF || a.name.localeCompare(b.name));
+  }
+  return Object.entries(grpMap).sort(([a], [b]) => a.localeCompare(b)).map(([grp, teams]) => ({ grp, teams }));
 }
 
 export function getTeamsView(data) {
