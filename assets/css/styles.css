@@ -156,7 +156,6 @@ a:hover { text-decoration: underline; }
 }
 .splash-logo-img {
   height: 50px; width: auto;
-  filter: brightness(0) invert(1);
 }
 .splash-bar-track {
   position: absolute; top: 24%;
