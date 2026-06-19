@@ -520,7 +520,7 @@ hr { border:none; border-top:1px solid var(--border); margin:1rem 0; width:100%;
   padding-left: .35rem;
 }
 .ladder-teams { text-align: center; font-family: var(--font); font-size: 1.15rem; font-weight: 800; }
-.ladder-pts   { text-align: right;  font-family: var(--font); font-size: 1.25rem; font-weight: 900; color: #111; }
+.ladder-pts   { text-align: right;  font-family: var(--font); font-size: 1.25rem; font-weight: 900; color: #510E93; }
 
 /* ---- MOVEMENT INDICATORS ---- */
 .ladder-move { display: flex; align-items: center; }
