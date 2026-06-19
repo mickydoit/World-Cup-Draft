@@ -136,15 +136,15 @@ a:hover { text-decoration: underline; }
   transition: opacity 0.6s ease;
 }
 #splash.splash-out { opacity: 0; pointer-events: none; }
-.splash-bg-tiles {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  object-position: center top;
+#splash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   z-index: 0;
-  pointer-events: none;
+  background: url('../img/splash-bg-tiles.svg') top center / 100% auto repeat-y;
   opacity: 0;
   animation: splash-img-in 0.5s ease-out forwards;
+  pointer-events: none;
 }
 .splash-header {
   position: absolute;
@@ -176,11 +176,11 @@ a:hover { text-decoration: underline; }
 @keyframes splash-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .splash-behind {
   position: absolute;
-  left: 50%;
-  bottom: -1dvh;
-  transform: translateX(calc(-54% + 2px));
-  height: clamp(300px, 50dvh, 520px);
-  width: auto;
+  top: 34%;
+  left: 46%;
+  transform: translateX(-50%);
+  width: 65vw;
+  height: auto;
   z-index: 1;
   pointer-events: none;
   opacity: 0;
@@ -188,10 +188,10 @@ a:hover { text-decoration: underline; }
 }
 .splash-player-img {
   position: absolute;
+  top: 28%;
   left: 50%;
-  bottom: -2dvh;
   transform: translateX(-50%);
-  height: clamp(360px, 58dvh, 580px);
+  height: 63dvh;
   width: auto;
   z-index: 2;
   pointer-events: none;
@@ -203,8 +203,8 @@ a:hover { text-decoration: underline; }
   to   { opacity: 1; }
 }
 @media (max-height: 700px) {
-  .splash-player-img { height: clamp(300px, 50dvh, 460px); }
-  .splash-behind     { height: clamp(260px, 44dvh, 400px); }
+  .splash-player-img { height: 55dvh; }
+  .splash-behind { width: 55vw; }
 }
 
 /* ---- TOPBAR ---- */
