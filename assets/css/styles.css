@@ -185,25 +185,33 @@ a:hover { text-decoration: underline; }
   position: absolute;
   bottom: 0;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(18px);
   width: 80vw;
   height: auto;
   z-index: 1;
   pointer-events: none;
   opacity: 0;
-  animation: splash-img-in 0.55s ease-out 0.1s forwards;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.splash-behind.splash-reveal {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 .splash-player-img {
   position: absolute;
   bottom: 0;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(24px);
   height: 63dvh;
   width: auto;
   z-index: 2;
   pointer-events: none;
   opacity: 0;
-  animation: splash-img-in 0.7s ease-out 0.2s forwards;
+  transition: opacity 0.85s ease-out, transform 0.85s cubic-bezier(0.2, 0, 0, 1);
+}
+.splash-player-img.splash-reveal {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 @keyframes splash-img-in {
   from { opacity: 0; }

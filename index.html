@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" href="assets/img/splash-bg-tiles.svg" as="image" />
   <link rel="preload" href="assets/img/splash-player.svg" as="image" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=82" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=83" />
   <!-- Cache-bust: redirect to a versioned URL so stale cached pages reload once -->
   <script>
     (function () {
@@ -51,5 +51,22 @@
   <div id="root"><main class="container"><p class="hint">Loading…</p></main></div>
   <script type="module" src="assets/js/app.js?v=51"></script>
   <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+  <script>
+    (function () {
+      var p = document.querySelector('.splash-player-img');
+      var b = document.querySelector('.splash-behind');
+      if (!p) return;
+      var done = false;
+      function reveal() {
+        if (done) return; done = true;
+        if (b) b.classList.add('splash-reveal');
+        setTimeout(function () { p.classList.add('splash-reveal'); }, 140);
+      }
+      setTimeout(reveal, 3500);
+      if (p.complete && p.naturalWidth) { reveal(); }
+      else if (p.decode) { p.decode().catch(function () {}).then(reveal); }
+      else { p.addEventListener('load', reveal); p.addEventListener('error', reveal); }
+    })();
+  </script>
 </body>
 </html>
