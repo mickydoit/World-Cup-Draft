@@ -136,6 +136,14 @@ a:hover { text-decoration: underline; }
   transition: opacity 0.6s ease;
 }
 #splash.splash-out { opacity: 0; pointer-events: none; }
+#splash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
 #splash::before {
   content: '';
   position: absolute;
