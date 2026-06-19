@@ -181,37 +181,38 @@ a:hover { text-decoration: underline; }
   animation: splash-load 4s cubic-bezier(.4,0,.2,1) forwards;
 }
 @keyframes splash-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-.splash-behind {
+.splash-behind-wrap,
+.splash-player-wrap {
   position: absolute;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%) translateY(18px);
+  left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.splash-behind-wrap { z-index: 1; }
+.splash-player-wrap { z-index: 2; }
+.splash-behind {
   width: 80vw;
   height: auto;
-  z-index: 1;
-  pointer-events: none;
   opacity: 0;
+  transform: translateY(18px);
   transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 .splash-behind.splash-reveal {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
 }
 .splash-player-img {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%) translateY(24px);
   height: 63dvh;
   width: auto;
-  z-index: 2;
-  pointer-events: none;
   opacity: 0;
+  transform: translateY(24px);
   transition: opacity 0.85s ease-out, transform 0.85s cubic-bezier(0.2, 0, 0, 1);
 }
 .splash-player-img.splash-reveal {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
 }
 @keyframes splash-img-in {
   from { opacity: 0; }
