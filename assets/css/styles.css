@@ -155,7 +155,7 @@ a:hover { text-decoration: underline; }
   animation: splash-img-in 0.4s ease-out 0.15s forwards;
 }
 .splash-logo-img {
-  height: 50px; width: auto;
+  height: 100px; width: auto;
 }
 .splash-bar-track {
   position: absolute; top: 24%;
@@ -204,6 +204,9 @@ a:hover { text-decoration: underline; }
 @media (max-height: 700px) {
   .splash-player-img { height: 55dvh; }
   .splash-behind { width: 70vw; }
+}
+@media (min-width: 768px) {
+  .splash-behind { height: 44dvh; width: auto; }
 }
 
 /* ---- TOPBAR ---- */
