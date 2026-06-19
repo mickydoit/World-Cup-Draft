@@ -478,7 +478,7 @@ hr { border:none; border-top:1px solid var(--border); margin:1rem 0; width:100%;
 .ladder-header .lh-move  { /* movement indicator header */ }
 .ladder-header .lh-avatar { /* empty */ }
 .ladder-header .lh-name  { padding-left: .35rem; }
-.ladder-header .lh-teams { text-align: left; }
+.ladder-header .lh-teams { text-align: center; }
 .ladder-header .lh-pts   { text-align: right; }
 
 .ladder-list { display: flex; flex-direction: column; gap: .5rem; }
@@ -519,8 +519,8 @@ hr { border:none; border-top:1px solid var(--border); margin:1rem 0; width:100%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding-left: .35rem;
 }
-.ladder-teams { text-align: left; font-family: var(--font); font-size: 1.15rem; font-weight: 800; }
-.ladder-pts   { text-align: right;  font-family: var(--font); font-size: 1.25rem; font-weight: 900; }
+.ladder-teams { text-align: center; font-family: var(--font); font-size: 1.15rem; font-weight: 800; }
+.ladder-pts   { text-align: right;  font-family: var(--font); font-size: 1.25rem; font-weight: 900; color: #111; }
 
 /* ---- MOVEMENT INDICATORS ---- */
 .ladder-move { display: flex; align-items: center; }
