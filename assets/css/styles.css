@@ -155,7 +155,7 @@ a:hover { text-decoration: underline; }
   animation: splash-img-in 0.4s ease-out 0.15s forwards;
 }
 .splash-logo-img {
-  height: 100px; width: auto;
+  height: 150px; width: auto;
 }
 .splash-bar-track {
   position: absolute; top: 24%;
