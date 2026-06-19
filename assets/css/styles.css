@@ -60,11 +60,11 @@ body[data-route="admin"], body[data-route=""] { --h1-color:#9333EA; --nav-active
 
 /* ---- DARK MODE ---- */
 body[data-theme="dark"] {
-  --bg:       #0f0f0f;
-  --bg-2:     #1a1a1a;
-  --bg-3:     #242424;
-  --border:   rgba(255,255,255,0.08);
-  --border-em:rgba(255,255,255,0.15);
+  --bg:       #1a1a1a;
+  --bg-2:     #333333;
+  --bg-3:     #424242;
+  --border:   rgba(255,255,255,0.10);
+  --border-em:rgba(255,255,255,0.18);
   --text:     #ffffff;
   --text-2:   rgba(255,255,255,0.58);
   --text-3:   rgba(255,255,255,0.36);
@@ -76,7 +76,7 @@ body[data-theme="dark"] select {
   border-color: rgba(255,255,255,.15);
 }
 body[data-theme="dark"] select option {
-  background: #1a1a1a;
+  background: #333333;
 }
 body[data-theme="dark"] code {
   background: rgba(255,255,255,.10);
