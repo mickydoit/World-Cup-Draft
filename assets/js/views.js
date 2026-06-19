@@ -20,7 +20,7 @@ export function renderLadder(ladder, groups = []) {
     <h2 class="wcs-title">World Cup Standings</h2>
     <div class="wcs-groups">
       ${groups.map(g => `
-        <div class="wcs-group">
+        <div class="wcs-group" data-action="open-group" data-grp="${JSON.stringify({grp:g.grp,teams:g.teams}).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">
           <span class="wcs-chip">Group ${esc(g.grp)}</span>
           <div class="wcs-table">
             <div class="wcs-row wcs-head">

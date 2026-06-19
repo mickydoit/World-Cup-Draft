@@ -3,7 +3,7 @@
 
 import { store } from './store.js?v=5';
 import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView, getGroupStandings } from './compute.js?v=39';
-import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView } from './views.js?v=40';
+import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView } from './views.js?v=41';
 
 const root = document.getElementById('root');
 const PASSWORD = (window.LBH_CONFIG || {}).ADMIN_PASSWORD || 'admin';
@@ -248,6 +248,57 @@ async function run(fn) {
   }
 }
 
+// ---- Group standings modal ----
+const grpModal = document.createElement('div');
+grpModal.className = 'grp-modal';
+grpModal.innerHTML = `
+  <div class="grp-modal-backdrop"></div>
+  <div class="grp-modal-panel" role="dialog" aria-modal="true">
+    <div class="grp-modal-hdr">
+      <span class="grp-modal-title"></span>
+      <button class="grp-modal-close" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="grp-modal-body"></div>
+  </div>`;
+document.body.appendChild(grpModal);
+
+function openGroupModal(g) {
+  const rows = g.teams.map((t, i) => `
+    <div class="grp-modal-row${i < 2 && t.Pts > 0 ? ' grp-modal-qualify' : ''}">
+      <span class="gm-pos">${i + 1}</span>
+      <span class="gm-team">${esc(t.name)}</span>
+      <span class="gm-num">${t.P}</span>
+      <span class="gm-num">${t.W}</span>
+      <span class="gm-num">${t.D}</span>
+      <span class="gm-num">${t.L}</span>
+      <span class="gm-num gm-gd">${t.GD > 0 ? '+' : ''}${t.GD}</span>
+      <span class="gm-num gm-pts">${t.Pts}</span>
+    </div>`).join('');
+  grpModal.querySelector('.grp-modal-title').textContent = `Group ${g.grp}`;
+  grpModal.querySelector('.grp-modal-body').innerHTML = `
+    <div class="grp-modal-row grp-modal-head">
+      <span class="gm-pos">#</span>
+      <span class="gm-team">Team</span>
+      <span class="gm-num">P</span>
+      <span class="gm-num">W</span>
+      <span class="gm-num">D</span>
+      <span class="gm-num">L</span>
+      <span class="gm-num">GD</span>
+      <span class="gm-num gm-pts">Pts</span>
+    </div>${rows}`;
+  grpModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeGroupModal() {
+  grpModal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+grpModal.querySelector('.grp-modal-backdrop').addEventListener('click', closeGroupModal);
+grpModal.querySelector('.grp-modal-close').addEventListener('click', closeGroupModal);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeGroupModal(); });
+
 // ---- event delegation (listeners live on the persistent #root) ----
 root.addEventListener('submit', (e) => {
   const form = e.target.closest('form[data-action]');
@@ -336,6 +387,8 @@ root.addEventListener('click', (e) => {
   } else if (action === 'scroll-to') {
     const target = document.getElementById(el.dataset.target);
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else if (action === 'open-group') {
+    try { openGroupModal(JSON.parse(el.dataset.grp)); } catch { /* ignore bad data */ }
   }
 });
 

@@ -578,6 +578,137 @@ hr { border:none; border-top:1px solid var(--border); margin:1rem 0; width:100%;
   .wcs-row { grid-template-columns: 1.4rem 1fr 1.6rem 2rem 2rem; }
 }
 
+/* ---- WCS group cards — tappable ---- */
+.wcs-group { cursor: pointer; transition: border-color .15s; }
+.wcs-group:hover { border-color: var(--h1-color); }
+
+/* ---- Group detail modal ---- */
+.grp-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.grp-modal.open { display: flex; }
+
+.grp-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+}
+
+.grp-modal-panel {
+  position: relative;
+  z-index: 1;
+  background: var(--bg-2);
+  border: 1px solid var(--border-em);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 460px;
+  overflow: hidden;
+  animation: grp-modal-in .18s ease both;
+}
+@keyframes grp-modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.grp-modal-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .9rem 1.1rem .75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-3);
+}
+.grp-modal-title {
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 1.15rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--h1-color);
+  transition: color .45s ease;
+}
+.grp-modal-close {
+  background: none;
+  border: 1px solid var(--border-em);
+  color: var(--text-2);
+  font-size: .9rem;
+  cursor: pointer;
+  padding: .28rem .6rem;
+  min-height: unset;
+  line-height: 1;
+  border-radius: 6px;
+  transition: color .12s, background .12s;
+}
+.grp-modal-close:hover { color: var(--text); background: var(--bg); }
+
+.grp-modal-body {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: .3rem 0 .4rem;
+}
+
+.grp-modal-row {
+  display: grid;
+  grid-template-columns: 2rem minmax(6rem,1fr) 2.6rem 2.6rem 2.6rem 2.6rem 3rem 3rem;
+  align-items: center;
+  gap: .15rem;
+  padding: .7rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  min-width: 300px;
+}
+.grp-modal-row:last-child { border-bottom: none; }
+.grp-modal-head {
+  padding: .45rem 1.1rem;
+  background: rgba(0,0,0,.15);
+}
+.grp-modal-qualify .gm-pos { color: var(--h1-color); transition: color .45s ease; }
+
+.gm-pos {
+  font-family: var(--font);
+  font-size: .92rem;
+  font-weight: 900;
+  text-align: center;
+  color: var(--text-3);
+}
+.grp-modal-head .gm-pos { font-size: .72rem; font-weight: 700; }
+
+.gm-team {
+  font-family: var(--font);
+  font-size: .98rem;
+  font-weight: 800;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.grp-modal-head .gm-team { font-size: .72rem; font-weight: 700; color: var(--text-3); }
+
+.gm-num {
+  font-family: var(--font);
+  font-size: .9rem;
+  font-weight: 700;
+  text-align: right;
+  color: var(--text-2);
+}
+.grp-modal-head .gm-num { font-size: .72rem; font-weight: 700; color: var(--text-3); }
+
+.gm-pts {
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--h1-color);
+  transition: color .45s ease;
+}
+.grp-modal-head .gm-pts { font-size: .72rem; font-weight: 700; color: var(--text-3); }
+
 /* ---- FIXTURES — gradient pill rows ---- */
 .fxgroup { margin-bottom: 2rem; }
 ul.fixtures { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
