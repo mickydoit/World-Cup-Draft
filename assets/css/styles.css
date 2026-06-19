@@ -176,10 +176,10 @@ a:hover { text-decoration: underline; }
 @keyframes splash-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .splash-behind {
   position: absolute;
-  top: 34%;
-  left: 46%;
+  bottom: 0;
+  left: 50%;
   transform: translateX(-50%);
-  width: 65vw;
+  width: 80vw;
   height: auto;
   z-index: 1;
   pointer-events: none;
@@ -188,7 +188,7 @@ a:hover { text-decoration: underline; }
 }
 .splash-player-img {
   position: absolute;
-  top: 28%;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   height: 63dvh;
@@ -204,7 +204,7 @@ a:hover { text-decoration: underline; }
 }
 @media (max-height: 700px) {
   .splash-player-img { height: 55dvh; }
-  .splash-behind { width: 55vw; }
+  .splash-behind { width: 70vw; }
 }
 
 /* ---- TOPBAR ---- */
