@@ -528,7 +528,7 @@ hr { border:none; border-top:1px solid var(--border); margin:1rem 0; width:100%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding-left: .35rem;
 }
-.ladder-teams { text-align: center; font-family: var(--font); font-size: 1.15rem; font-weight: 800; color: #58299D; }
+.ladder-teams { text-align: center; font-family: var(--font); font-size: 1.25rem; font-weight: 800; color: #58299D; }
 .ladder-pts   { text-align: right;  font-family: var(--font); font-size: 1.25rem; font-weight: 900; color: #510E93; }
 
 /* ---- MOVEMENT INDICATORS ---- */
@@ -952,7 +952,7 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
   }
   .ladder-rank  { font-size: 1.1rem; }
   .ladder-pts   { font-size: 1.05rem; }
-  .ladder-teams { font-size: 1rem; }
+  .ladder-teams { font-size: 1.05rem; }
   .ladder-name  { font-size: .9rem; }
   .ladder-avatar { width: 1.8rem; height: 1.8rem; font-size: .82rem; }
 
