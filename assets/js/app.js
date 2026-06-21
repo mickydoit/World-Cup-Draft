@@ -2,7 +2,7 @@
 // Pages base path with no server rewrites.
 
 import { store } from './store.js?v=17';
-import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView, getGroupStandings, getGroupPositions, resolveEspnSlot } from './compute.js?v=25';
+import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView, getGroupStandings, getGroupPositions, resolveEspnSlot } from './compute.js?v=26';
 import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView, renderIdentityGate } from './views.js?v=51';
 
 const root = document.getElementById('root');
