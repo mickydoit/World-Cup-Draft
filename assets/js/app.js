@@ -2,8 +2,8 @@
 // Pages base path with no server rewrites.
 
 import { store } from './store.js?v=17';
-import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView, getTipLadder, getTipsView, getGroupStandings, getQualifiers } from './compute.js?v=23';
-import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView, renderTips, renderIdentityGate } from './views.js?v=49';
+import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView, getTipLadder, getTipsView, getGroupStandings, getGroupPositions, resolveEspnSlot } from './compute.js?v=25';
+import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView, renderTips, renderIdentityGate } from './views.js?v=51';
 
 const root = document.getElementById('root');
 const PASSWORD = (window.LBH_CONFIG || {}).ADMIN_PASSWORD || 'admin';
@@ -27,7 +27,40 @@ let flash = null;          // {notice} | {problem} consumed by the next admin re
 let loginError = null;
 let refreshTimer = null;
 let prevRoute = null;
-let espnStandings = null;
+let espnStandings = null;      // ESPN group standings (for qualifier resolution)
+let r32Overlay = null;         // resolved R32 matchups: [{home, away, homeConfirmed, awayConfirmed}×16]
+
+const ESPN_R32_DATES = ['20260628','20260629','20260630','20260701','20260702','20260703','20260704'];
+const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=';
+const ESPN_STANDINGS_URL = 'https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026';
+
+async function loadBracketOverlay() {
+  if (r32Overlay) return;
+  try {
+    const [standingsResp, ...sbResps] = await Promise.all([
+      fetch(ESPN_STANDINGS_URL).then((r) => r.ok ? r.json() : null).catch(() => null),
+      ...ESPN_R32_DATES.map((d) => fetch(ESPN_SB + d).then((r) => r.ok ? r.json() : null).catch(() => null)),
+    ]);
+    espnStandings = standingsResp;
+    const groupPos = getGroupPositions(espnStandings);
+
+    const seen = new Set();
+    const matches = [];
+    for (const sb of sbResps) {
+      for (const e of sb?.events || []) {
+        if (e.season?.slug !== 'round-of-32' || seen.has(e.id)) continue;
+        seen.add(e.id);
+        const comp = e.competitions[0];
+        const home = comp.competitors.find((c) => c.homeAway === 'home');
+        const away = comp.competitors.find((c) => c.homeAway === 'away');
+        const homeName = resolveEspnSlot(home?.team?.displayName, groupPos);
+        const awayName = resolveEspnSlot(away?.team?.displayName, groupPos);
+        matches.push({ home: homeName, away: awayName });
+      }
+    }
+    r32Overlay = matches;
+  } catch { r32Overlay = []; }
+}
 let lastRenderedRoute = null;
 let lastPaintedRoute = null;
 let lastRenderedBody = null;
@@ -184,12 +217,9 @@ async function render(opts = {}) {
         body = renderFixtures(getFixturesView(data));
         break;
       case '/bracket':
-        body = renderBracket(getBracket(data), getQualifiers(data, espnStandings));
-        if (!espnStandings) {
-          fetch('https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026')
-            .then((r) => r.ok ? r.json() : null)
-            .catch(() => null)
-            .then((s) => { if (s) { espnStandings = s; if (currentRoute() === '/bracket') render('/bracket'); } });
+        body = renderBracket(getBracket(data, r32Overlay || []));
+        if (!r32Overlay) {
+          loadBracketOverlay().then(() => { if (currentRoute() === '/bracket') render('/bracket'); });
         }
         break;
       case '/tips':
