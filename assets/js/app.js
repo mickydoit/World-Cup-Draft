@@ -1,9 +1,9 @@
 // SPA router + event wiring. Hash-based routing so it works under any GitHub
 // Pages base path with no server rewrites.
 
-import { store } from './store.js?v=5';
-import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView, getGroupStandings } from './compute.js?v=39';
-import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView } from './views.js?v=40';
+import { store } from './store.js?v=17';
+import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView, getTipLadder, getTipsView, getGroupStandings, getQualifiers } from './compute.js?v=23';
+import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView, renderTips, renderIdentityGate } from './views.js?v=49';
 
 const root = document.getElementById('root');
 const PASSWORD = (window.LBH_CONFIG || {}).ADMIN_PASSWORD || 'admin';
@@ -11,6 +11,11 @@ const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&':
 
 let isAdmin = localStorage.getItem('lbh_admin') === '1';
 let myId = Number(localStorage.getItem('lbh_me')) || null; // which player THIS device is
+let myName = localStorage.getItem('lbh_me_name') || null;  // cached for the header chip
+let skipId = sessionStorage.getItem('lbh_skip_id') === '1'; // "I'll pick later" — this visit only
+
+// Two-letter badge for the identity chip ("Papacostas" -> "PA").
+const initials = (n) => !n ? '?' : (n.includes(' ') ? n.split(' ').map((w) => w[0]).join('').slice(0, 2) : n.slice(0, 2)).toUpperCase();
 
 function applyTheme(dark) {
   document.body.dataset.theme = dark ? 'dark' : 'light';
@@ -21,17 +26,18 @@ let draftMyTurn = false;   // set each draft render; pauses auto-refresh while y
 let flash = null;          // {notice} | {problem} consumed by the next admin render
 let loginError = null;
 let refreshTimer = null;
+let prevRoute = null;
+let espnStandings = null;
+let lastRenderedRoute = null;
 let lastPaintedRoute = null;
 let lastRenderedBody = null;
-let lastRenderedRoute = null;
-let prevRoute = null;
-let cachedData = null;
 
 const NAV = [
   { route: '/', label: 'Ladder', key: 'ladder' },
   { route: '/fixtures', label: 'Fixtures', key: 'fixtures' },
   { route: '/bracket', label: 'Bracket', key: 'bracket' },
   { route: '/draft', label: 'Teams', key: 'draft' },
+  { route: '/tips', label: 'Tipping', key: 'tips' },
 ];
 
 function currentRoute() {
@@ -42,6 +48,7 @@ function activeKey(route) {
   if (route.startsWith('/fixtures')) return 'fixtures';
   if (route.startsWith('/bracket')) return 'bracket';
   if (route.startsWith('/draft')) return 'draft';
+  if (route.startsWith('/tips')) return 'tips';
   if (route.startsWith('/admin') || route.startsWith('/login')) return 'admin';
   return '';
 }
@@ -53,6 +60,9 @@ function headerHtml(route) {
     ? `<a href="#/admin" class="${ak === 'admin' ? 'active' : ''}">Admin</a><button class="link" data-action="logout">Logout</button>`
     : `<a href="#/login" class="${ak === 'admin' ? 'active' : ''}">Admin</a>`;
   const isDark = document.body.dataset.theme !== 'light';
+  const idChip = myId
+    ? `<button class="id-chip" data-action="clear-me" title="You are ${esc(myName || '')} — tap to switch player">${initials(myName)}</button>`
+    : `<button class="id-chip ghost" data-action="signin" title="Pick your name">Sign in</button>`;
   return `
   <header class="topbar">
     <a class="brand" href="#/">
@@ -60,6 +70,7 @@ function headerHtml(route) {
     </a>
     <nav class="topbar-nav">${links}${adminArea}</nav>
     <div class="topbar-end">
+      ${idChip}
       <button class="theme-toggle" data-action="toggle-theme">${isDark ? '☀ Light' : '☾ Dark'}</button>
       <button class="nav-burger" data-action="toggle-nav" aria-label="Menu">
         <span></span><span></span><span></span>
@@ -79,6 +90,9 @@ function headerHtml(route) {
     </a>
     <a href="#/bracket" class="bnav-item ${ak === 'bracket' ? 'active' : ''}" aria-label="Bracket">
       <span class="bnav-icon bnav-bracket"></span>
+    </a>
+    <a href="#/tips" class="bnav-item ${ak === 'tips' ? 'active' : ''}" aria-label="Tipping">
+      <span class="bnav-icon bnav-tips"></span>
     </a>
     <a href="${isAdmin ? '#/admin' : '#/login'}" class="bnav-item ${ak === 'admin' ? 'active' : ''}" aria-label="Admin">
       <span class="bnav-icon bnav-admin"></span>
@@ -105,7 +119,6 @@ function paint(route, body) {
     root.innerHTML = headerHtml(route) + `<main class="container" id="app">${body}</main>`;
     lastPaintedRoute = route;
     lastRenderedBody = body;
-    window.scrollTo(0, 0);
   }
   // Restore open state on auto-refresh (skip on first load — let the smart default apply)
   if (hadAccordions && openGroups.size > 0) {
@@ -115,46 +128,14 @@ function paint(route, body) {
   }
 }
 
-function bodyFromData(route, data) {
-  if (route.startsWith('/draft/player/')) {
-    return renderPlayerView(getPlayerView(data, Number(route.split('/')[3])));
-  }
-  if (route.startsWith('/draft/team/')) {
-    const fromPlayer = prevRoute && prevRoute.startsWith('/draft/player/') ? prevRoute : null;
-    return renderTeamView(getTeamView(data, Number(route.split('/')[3])), fromPlayer);
-  }
-  switch (route) {
-    case '/fixtures': return renderFixtures(getFixturesView(data));
-    case '/bracket':  return renderBracket(getBracket(data));
-    case '/draft': {
-      const ds = getDraftState(data);
-      if (ds.settings.draft_status === 'complete') return renderTeamsOverview(getTeamsView(data));
-      draftMyTurn = ds.settings.draft_status === 'in_progress' && !!ds.current && ds.current.playerId === myId;
-      return renderDraft(ds, isAdmin, myId);
-    }
-    case '/admin':
-      if (!isAdmin) { const b = renderLogin(loginError); loginError = null; return b; }
-      else {
-        const b = renderAdmin({
-          groups: getFixturesView(data),
-          players: [...data.players].sort((a, b) => a.id - b.id),
-          teams: [...data.teams].sort((a, b) => (a.ranking ?? 1e9) - (b.ranking ?? 1e9)),
-          settings: data.settings,
-          mode: store.mode,
-          notice: flash && flash.notice,
-          problem: flash && flash.problem,
-        });
-        flash = null;
-        return b;
-      }
-    default: return renderLadder(getLadder(data), getGroupStandings(data));
-  }
-}
-
 async function render(opts = {}) {
   const route = currentRoute();
-  if (lastRenderedRoute !== route) prevRoute = lastRenderedRoute;
+  if (lastRenderedRoute !== route) {
+    prevRoute = lastRenderedRoute;
+    window.scrollTo(0, 0);
+  }
   lastRenderedRoute = route;
+  if (!root.querySelector('.topbar')) paint(route, `<p class="hint">Loading…</p>`);
 
   if (route === '/login') {
     paint(route, renderLogin(loginError));
@@ -163,17 +144,9 @@ async function render(opts = {}) {
     return;
   }
 
-  // Paint immediately with cached data so navigation feels instant
-  if (lastPaintedRoute !== route && cachedData) {
-    paint(route, bodyFromData(route, cachedData));
-  } else if (!root.querySelector('.topbar')) {
-    paint(route, `<p class="hint">Loading…</p>`);
-  }
-
   let data;
   try {
     data = await store.loadAll();
-    cachedData = data;
   } catch (err) {
     paint(route, `
       <h1>Couldn't load data</h1>
@@ -183,7 +156,76 @@ async function render(opts = {}) {
     return;
   }
 
-  paint(route, bodyFromData(route, data));
+  // Backfill the cached name for devices that picked a player before names were stored.
+  if (myId && !myName) {
+    const p = data.players.find((x) => x.id === myId);
+    if (p) { myName = p.name; localStorage.setItem('lbh_me_name', myName); }
+  }
+
+  // First-open login: greet with "Who are you?" until you pick a name (remembered
+  // on this device) or choose to look around first.
+  if (!myId && !skipId) {
+    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+    root.innerHTML = `<main class="container idgate-wrap">${renderIdentityGate([...data.players].sort((a, b) => a.id - b.id))}</main>`;
+    return;
+  }
+
+  let body;
+  if (route.startsWith('/draft/player/')) {
+    const playerId = Number(route.split('/')[3]);
+    body = renderPlayerView(getPlayerView(data, playerId));
+  } else if (route.startsWith('/draft/team/')) {
+    const teamId = Number(route.split('/')[3]);
+    const fromPlayer = prevRoute && prevRoute.startsWith('/draft/player/') ? prevRoute : null;
+    body = renderTeamView(getTeamView(data, teamId), fromPlayer);
+  } else {
+    switch (route) {
+      case '/fixtures':
+        body = renderFixtures(getFixturesView(data));
+        break;
+      case '/bracket':
+        body = renderBracket(getBracket(data), getQualifiers(data, espnStandings));
+        if (!espnStandings) {
+          fetch('https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026')
+            .then((r) => r.ok ? r.json() : null)
+            .catch(() => null)
+            .then((s) => { if (s) { espnStandings = s; if (currentRoute() === '/bracket') render('/bracket'); } });
+        }
+        break;
+      case '/tips':
+        body = renderTips(getTipLadder(data), getTipsView(data, myId), myId);
+        break;
+      case '/draft': {
+        const ds = getDraftState(data);
+        if (ds.settings.draft_status === 'complete') {
+          body = renderTeamsOverview(getTeamsView(data));
+        } else {
+          draftMyTurn = ds.settings.draft_status === 'in_progress' && !!ds.current && ds.current.playerId === myId;
+          body = renderDraft(ds, isAdmin, myId);
+        }
+        break;
+      }
+      case '/admin':
+        if (!isAdmin) { body = renderLogin(loginError); loginError = null; }
+        else {
+          body = renderAdmin({
+            groups: getFixturesView(data),
+            players: [...data.players].sort((a, b) => a.id - b.id),
+            teams: [...data.teams].sort((a, b) => (a.ranking ?? 1e9) - (b.ranking ?? 1e9)),
+            settings: data.settings,
+            mode: store.mode,
+            notice: flash && flash.notice,
+            problem: flash && flash.problem,
+          });
+          flash = null;
+        }
+        break;
+      case '/':
+      default:
+        body = renderLadder(getLadder(data), getGroupStandings(data));
+    }
+  }
+  paint(route, body);
   setAutoRefresh(route);
   // On navigation (not the silent auto-refresh), jump to where the tournament
   // is up to so you don't have to scroll past weeks of finished games.
@@ -229,7 +271,7 @@ function scrollToCurrentMatch(route) {
 // Ladder + fixtures refresh themselves so entered scores appear without a reload.
 function setAutoRefresh(route) {
   if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
-  if (route === '/' || route === '/fixtures') {
+  if (route === '/' || route === '/fixtures' || route === '/tips') {
     refreshTimer = setInterval(() => { if (currentRoute() === route) render(); }, route === '/fixtures' ? 30000 : 60000);
   } else if (route === '/draft') {
     // Waiting players poll so picks appear live; the person mid-pick isn't yanked.
@@ -322,20 +364,31 @@ root.addEventListener('click', (e) => {
     render();
   } else if (action === 'set-me') {
     myId = Number(el.dataset.playerId);
+    myName = el.dataset.playerName || null;
     localStorage.setItem('lbh_me', String(myId));
+    if (myName) localStorage.setItem('lbh_me_name', myName);
+    skipId = false; sessionStorage.removeItem('lbh_skip_id');
     render();
   } else if (action === 'clear-me') {
-    myId = null;
+    myId = null; myName = null;
     localStorage.removeItem('lbh_me');
+    localStorage.removeItem('lbh_me_name');
+    skipId = false; sessionStorage.removeItem('lbh_skip_id');
+    render();
+  } else if (action === 'skip-id') {
+    skipId = true; sessionStorage.setItem('lbh_skip_id', '1');
+    render();
+  } else if (action === 'signin') {
+    skipId = false; sessionStorage.removeItem('lbh_skip_id');
     render();
   } else if (action === 'draft-pick') {
     run(() => store.makePick(Number(el.dataset.teamId)));
+  } else if (action === 'tip') {
+    if (!myId) { window.alert('Pick your name first.'); return; }
+    run(() => store.saveTip(myId, Number(el.dataset.fixtureId), el.dataset.pick));
   } else if (action === 'del-fixture') {
     if (!window.confirm('Delete this knockout match?')) return;
     run(() => store.deleteFixture(Number(el.dataset.id)));
-  } else if (action === 'scroll-to') {
-    const target = document.getElementById(el.dataset.target);
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 });
 
