@@ -1233,3 +1233,14 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
 @media(min-width: 600px) {
   .teams-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---- Confirmed qualifiers grid (bracket page) ---- */
+.qualifiers-section { margin-bottom: 1.75rem; }
+.qualifiers-heading { font-size: .75rem; text-transform: uppercase; letter-spacing: .09em; color: var(--text-2); margin: 0 0 .65rem; font-weight: 700; }
+.qualifiers-count { font-size: .7rem; background: var(--h1-color); color: #fff; border-radius: 4px; padding: .1rem .45rem; margin-left: .4rem; vertical-align: middle; }
+.qualifiers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: .4rem; }
+.qualifier-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: .45rem .6rem; }
+.qualifier-card--maybe { border-style: dashed; opacity: .55; }
+.q-team { display: block; font-weight: 700; font-size: .78rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-meta { display: block; font-size: .65rem; color: var(--text-2); margin-top: .1rem; }
+.q-meta strong { color: var(--h1-color); font-weight: 700; }
