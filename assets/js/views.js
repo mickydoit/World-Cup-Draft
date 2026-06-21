@@ -81,8 +81,8 @@ export function renderFixtures(groups) {
   const card = (f) => {
     const isLive = f.status === 'live';
     const isFinished = f.status === 'finished';
-    const scored = isFinished || isLive;
-    const isDraw = isFinished && f.winner_team_id == null;
+    const scored = (isFinished || isLive) && f.home_score != null && f.away_score != null;
+    const isDraw = isFinished && scored && f.winner_team_id == null;
     const sep = scored ? `${f.home_score}&ndash;${f.away_score}` : 'v';
     const liveDot = isLive ? `<span class="live-dot"></span>` : '';
     return `
@@ -195,7 +195,25 @@ function mbRow(feed1, feed2, advance) {
   </div>`;
 }
 
-export function renderBracket(b) {
+export function renderBracket(b, qualifiers) {
+  const { qualified = [], possible = [] } = qualifiers || {};
+  const qualHtml = qualified.length > 0 ? `
+  <section class="qualifiers-section">
+    <h2 class="qualifiers-heading">Confirmed — Round of 32 <span class="qualifiers-count">${qualified.length}/32</span></h2>
+    <div class="qualifiers-grid">
+      ${qualified.map((q) => `
+      <div class="qualifier-card">
+        <span class="q-team">${esc(q.name)}</span>
+        <span class="q-meta">${esc(q.group)}${q.owner ? ` · <strong>${esc(q.owner)}</strong>` : ''}</span>
+      </div>`).join('')}
+      ${possible.length > 0 ? `
+      <div class="qualifier-card qualifier-card--maybe">
+        <span class="q-team">+${possible.length} third-place spots TBD</span>
+        <span class="q-meta">Best 8 of 12 third-placers advance</span>
+      </div>` : ''}
+    </div>
+  </section>` : '';
+
   const [r32, r16, qf, sf, fin] = b.rounds.map(r => r.matches);
   const half = a => [a.slice(0, a.length / 2), a.slice(a.length / 2)];
   const [r32L, r32R] = half(r32);
@@ -227,6 +245,7 @@ export function renderBracket(b) {
       ? `<p class="hint">Advancing team highlighted. Points: R32=1, R16=2, QF=3, SF=4, Final=5.</p>`
       : `<p class="hint">Bracket fills in after the group stage.</p>`}
   </div>
+  ${qualHtml}
   <div class="bkt-page">
     <div class="bkt-header">
       <div class="bkt-hcol">R32</div>
@@ -268,6 +287,121 @@ export function renderBracket(b) {
     <div class="bm-panel" id="bmp-r16">${r16html}</div>
     <div class="bm-panel" id="bmp-ko">${kohtml}</div>
   </div>`;
+}
+
+// --------------------------------------------------------------- Tipping
+export function renderTips(ladder, view, myId) {
+  const initials = (name) => name ? name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() : '?';
+  const me = ladder.find((p) => p.id === myId) || null;
+  const optLabel = (f, opt) => opt === 'draw' ? 'Draw'
+    : opt === 'home' ? (f.home_code || f.home_name || 'Home')
+    : (f.away_code || f.away_name || 'Away');
+
+  const tipLadder = `
+    <div class="tip-ladder">
+      <div class="ladder-header">
+        <span class="lh-rank">#</span>
+        <span class="lh-avatar"></span>
+        <span class="lh-name">Player</span>
+        <span class="lh-pts">Pts</span>
+      </div>
+      <div class="ladder-list">
+        ${ladder.map((p, i) => `
+          <div class="ladder-row ${i === 0 ? 'leader' : ''}">
+            <span class="ladder-rank">${i + 1}</span>
+            <span class="ladder-avatar">${initials(p.name)}</span>
+            <span class="ladder-name">${esc(p.name)}</span>
+            <span class="ladder-pts">${p.points}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  // A match you can still tip on.
+  const tipCard = (f) => `
+    <div class="tip-match">
+      <div class="tip-match-head">
+        <span class="tip-when">${esc(f.time_label || 'TBC')}</span>
+        <span class="tip-stage">${esc(f.stage_label)}</span>
+      </div>
+      <div class="tip-row">
+        <span class="tip-side">${esc(f.home_name || 'TBD')}</span>
+        <span class="tip-vs">v</span>
+        <span class="tip-side">${esc(f.away_name || 'TBD')}</span>
+      </div>
+      <div class="tip-options">
+        ${f.tipOptions.map((opt) => `
+          <button class="tipbtn ${f.myPick === opt ? 'chosen' : ''}" data-action="tip" data-fixture-id="${f.id}" data-pick="${opt}">
+            ${esc(optLabel(f, opt))}
+          </button>`).join('')}
+      </div>
+      <div class="tip-count">${f.myPick ? 'Your tip is in' : 'Tap your tip'} · ${f.tippedCount}/${f.playerCount} in</div>
+    </div>`;
+
+  // A locked match — reveal everyone's picks.
+  const resultCard = (f) => {
+    const chipClass = (t) => t.pick == null ? 'none' : (f.outcome == null ? 'pending' : (t.correct ? 'hit' : 'miss'));
+    const chipSym = (t) => t.pick == null ? '' : (f.outcome == null ? '' : (t.correct ? '✓' : '✗'));
+    return `
+    <div class="tip-match locked ${f.status === 'finished' ? 'played' : ''}">
+      <div class="tip-match-head">
+        <span class="tip-when">${esc(f.time_label || '')}</span>
+        <span class="tip-stage">${esc(f.stage_label)}</span>
+      </div>
+      <div class="tip-row">
+        <span class="tip-side ${f.outcome === 'home' ? 'won' : ''}">${esc(f.home_name || 'TBD')}</span>
+        <span class="tip-vs">${f.status === 'finished' && f.home_score != null ? `${f.home_score}&ndash;${f.away_score}` : 'v'}</span>
+        <span class="tip-side ${f.outcome === 'away' ? 'won' : ''}">${esc(f.away_name || 'TBD')}</span>
+      </div>
+      <div class="tip-results">
+        ${f.allTips.map((t) => `
+          <span class="tip-chip ${chipClass(t)}">
+            <span class="tip-chip-name">${esc(t.name)}</span>
+            <span class="tip-chip-pick">${t.pick == null ? '—' : esc(optLabel(f, t.pick))} ${chipSym(t)}</span>
+          </span>`).join('')}
+      </div>
+    </div>`;
+  };
+
+  // Each match shows its tip buttons while open, or everyone's picks once locked.
+  const card = (f) => (f.locked ? resultCard(f) : tipCard(f));
+
+  const dayBadge = (g) => {
+    const total = g.fixtures.length;
+    if (g.allPlayed) return `<span class="fxday-badge done">All played</span>`;
+    const toTip = g.fixtures.filter((f) => !f.locked && !f.myPick).length;
+    if (toTip > 0) return `<span class="fxday-badge live">${toTip} to tip</span>`;
+    const played = g.fixtures.filter((f) => f.status === 'finished').length;
+    if (played > 0) return `<span class="fxday-badge">${played}/${total} played</span>`;
+    return `<span class="fxday-badge">${total} match${total !== 1 ? 'es' : ''}</span>`;
+  };
+
+  // openTitle = the one day that starts expanded in its section.
+  const renderDay = (g, openTitle) => `
+    <details class="fxday${g.allPlayed ? ' done' : ''}" data-group="${esc(g.title)}"${g.title === openTitle ? ' open' : ''}>
+      <summary class="fxday-header">
+        <span class="fxday-title">${esc(g.title)}</span>
+        ${dayBadge(g)}
+      </summary>
+      <div class="fxday-body">${g.fixtures.map(card).join('')}</div>
+    </details>`;
+
+  const section = (days, openTitle) => days.map((g) => renderDay(g, openTitle)).join('');
+  const toTipOpen = view.toTip[0] ? view.toTip[0].title : null;       // soonest day to tip
+  const resultsOpen = view.results[0] ? view.results[0].title : null; // most recent results day
+
+  return `
+  <h1>Tipping</h1>
+  <p class="hint">Tip the winner of every match — 1 point for each correct call. Group games can be a draw; knockout ties go to whoever advances. Tips lock 1 hour before kick-off, and you can't see the others' picks until then.</p>
+
+  ${tipLadder}
+
+  <h2 class="tip-section">To tip</h2>
+  ${!me ? `<p class="hint">Tap <strong>Sign in</strong> (top-right) to choose your name and start tipping.</p>` : ''}
+  ${view.toTip.length ? section(view.toTip, toTipOpen) : `<p class="hint">You're all caught up — no matches left to tip.</p>`}
+
+  ${view.results.length ? `<h2 class="tip-section">Results</h2>${section(view.results, resultsOpen)}` : ''}
+
+  <div class="view-btn-wrap"><a class="view-btn" href="#/">World Cup Draft →</a></div>`;
 }
 
 // ----------------------------------------------------------------- Draft
@@ -325,7 +459,7 @@ export function renderDraft(s, isAdmin, myId) {
     <div class="whoami card">
       ${me
         ? `<span class="who-label">You are</span> <span class="me">${esc(me.name)}</span> <button class="link" data-action="clear-me">change</button>`
-        : `<span class="who-label">Who are you?</span> <span class="who-btns">${s.players.map((p) => `<button data-action="set-me" data-player-id="${p.id}">${esc(p.name)}</button>`).join('')}</span>`}
+        : `<span class="who-label">Who are you?</span> <span class="who-btns">${s.players.map((p) => `<button data-action="set-me" data-player-id="${p.id}" data-player-name="${esc(p.name)}">${esc(p.name)}</button>`).join('')}</span>`}
     </div>` : '';
 
   const teamButtons = `
@@ -370,12 +504,13 @@ function fxPill(f) {
   const sn = (n) => n ? (n.length > 5 ? n.slice(0, 4) + '..' : n) : '—';
   const when = [f.short_date_label, f.time_label].filter(Boolean).join(' ');
   const owners = (f.home_owner || f.away_owner) ? `${sn(f.home_owner)} v ${sn(f.away_owner)}` : '';
+  const played = f.status === 'finished' && f.home_score != null && f.away_score != null;
   return `
-  <li class="fixture ${f.status === 'finished' ? 'played' : ''}">
+  <li class="fixture ${played ? 'played' : ''}">
     <span class="fx-when">${esc(when || 'TBC')}</span>
     <div class="fx-teams">
       <span class="fx-home">${esc(f.home_name || 'TBD')}</span>
-      <span class="fx-sep">${f.status === 'finished' ? `${f.home_score}&ndash;${f.away_score}` : 'v'}</span>
+      <span class="fx-sep">${played ? `${f.home_score}&ndash;${f.away_score}` : 'v'}</span>
       <span class="fx-away">${esc(f.away_name || 'TBD')}</span>
     </div>
     <span class="fx-owners">${esc(owners)}</span>
@@ -530,6 +665,20 @@ export function renderAdmin({ groups, players, teams, settings, mode, notice, pr
     <p class="hint">For knockout matches, also pick the team that advances (this is who gets the points, including penalty wins).</p>
     ${scoreRows}
   </section>`;
+}
+
+// -------------------------------------------------- Identity gate (login)
+export function renderIdentityGate(players) {
+  return `
+  <div class="idgate">
+    <img class="idgate-logo" src="assets/img/logo.svg" alt="LBH Club World Cup" />
+    <h1 class="idgate-title">Who are you?</h1>
+    <p class="hint idgate-hint">Tap your name to log in — we'll remember you on this device.</p>
+    <div class="idgate-btns">
+      ${players.map((p) => `<button class="idgate-btn" data-action="set-me" data-player-id="${p.id}" data-player-name="${esc(p.name)}">${esc(p.name)}</button>`).join('')}
+    </div>
+    <button class="link idgate-skip" data-action="skip-id">I'll pick later — just looking</button>
+  </div>`;
 }
 
 // ----------------------------------------------------------------- Login
