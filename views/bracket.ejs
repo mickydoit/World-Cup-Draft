@@ -6,6 +6,26 @@
   <p class="hint">Advancing team highlighted. The name underneath each nation is the mate who owns it. Points: R32 = 1, R16 = 2, QF = 3, SF = 4, Final = 5.</p>
 <% } %>
 
+<% if (qualified && qualified.length > 0) { %>
+<section class="qualifiers-section">
+  <h2 class="qualifiers-heading">Confirmed — Round of 32 <span class="qualifiers-count"><%= qualified.length %>/32</span></h2>
+  <div class="qualifiers-grid">
+    <% qualified.forEach(q => { %>
+    <div class="qualifier-card">
+      <span class="q-team"><%= q.name %></span>
+      <span class="q-meta"><%= q.group %><% if (q.owner) { %> · <strong><%= q.owner %></strong><% } %></span>
+    </div>
+    <% }) %>
+    <% if (possible && possible.length > 0) { %>
+    <div class="qualifier-card qualifier-card--maybe">
+      <span class="q-team">+<%= possible.length %> third-place spots TBD</span>
+      <span class="q-meta">Best 8 of 12 third-placers advance</span>
+    </div>
+    <% } %>
+  </div>
+</section>
+<% } %>
+
 <%
   function side(name, owner, score, isWinner, finished, tbd) {
 %>
