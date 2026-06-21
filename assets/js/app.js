@@ -50,16 +50,20 @@ async function loadBracketOverlay() {
       for (const e of sb?.events || []) {
         if (e.season?.slug !== 'round-of-32' || seen.has(e.id)) continue;
         seen.add(e.id);
-        const comp = e.competitions[0];
-        const home = comp.competitors.find((c) => c.homeAway === 'home');
-        const away = comp.competitors.find((c) => c.homeAway === 'away');
+        const comp = e.competitions?.[0];
+        if (!comp) continue;
+        const home = comp.competitors?.find((c) => c.homeAway === 'home');
+        const away = comp.competitors?.find((c) => c.homeAway === 'away');
         const homeName = resolveEspnSlot(home?.team?.displayName, groupPos);
         const awayName = resolveEspnSlot(away?.team?.displayName, groupPos);
         matches.push({ home: homeName, away: awayName });
       }
     }
-    r32Overlay = matches;
-  } catch { r32Overlay = []; }
+    r32Overlay = matches.length > 0 ? matches : null;
+  } catch (err) {
+    console.error('loadBracketOverlay failed:', err);
+    r32Overlay = null;
+  }
 }
 let lastRenderedRoute = null;
 let lastPaintedRoute = null;
@@ -217,10 +221,8 @@ async function render(opts = {}) {
         body = renderFixtures(getFixturesView(data));
         break;
       case '/bracket':
+        if (!r32Overlay) await loadBracketOverlay();
         body = renderBracket(getBracket(data, r32Overlay || []));
-        if (!r32Overlay) {
-          loadBracketOverlay().then(() => { if (currentRoute() === '/bracket') render('/bracket'); });
-        }
         break;
       case '/tips':
         body = renderTips(getTipLadder(data), getTipsView(data, myId), myId);
