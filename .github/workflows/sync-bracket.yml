@@ -1,0 +1,27 @@
+name: Sync bracket fixtures
+
+# Checks ESPN for confirmed knockout fixtures and inserts them into Supabase
+# once real teams are known (after each round's draw). Does NOT touch scores,
+# group-stage rows, or picks — safe to run alongside the live-score sync.
+on:
+  schedule:
+    - cron: '30 * * * *' # every hour at :30 — offset from the score sync
+  workflow_dispatch: {}
+
+concurrency:
+  group: sync-bracket
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - name: Insert confirmed knockout fixtures
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: node scripts/sync-bracket.mjs
