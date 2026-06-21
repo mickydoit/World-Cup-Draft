@@ -341,3 +341,56 @@ export async function updatePlayerNames(body) {
 export async function setThirdPlace(on) {
   await query('UPDATE settings SET score_third_place = $1 WHERE id = 1', [on]);
 }
+
+const ESPN_STANDINGS_URL = 'https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026';
+
+const STANDINGS_NAME_MAP = {
+  'Czechia': 'Czech Republic',
+  'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
+  'Bosnia & Herzegovina': 'Bosnia and Herzegovina',
+  'Congo DR': 'DR Congo',
+  'DRC': 'DR Congo',
+  'Türkiye': 'Turkey',
+  'Korea Republic': 'South Korea',
+  "Côte d'Ivoire": 'Ivory Coast',
+  "Cote d'Ivoire": 'Ivory Coast',
+};
+
+/** Fetch confirmed qualifiers from ESPN standings — no token required. */
+export async function getConfirmedQualifiers() {
+  let standings;
+  try {
+    const res = await fetch(ESPN_STANDINGS_URL);
+    if (!res.ok) return { qualified: [], possible: [] };
+    standings = await res.json();
+  } catch {
+    return { qualified: [], possible: [] };
+  }
+
+  const { rows: pickRows } = await query(`
+    SELECT t.name AS team_name, p.name AS player_name
+    FROM picks pk
+    JOIN teams t ON t.id = pk.team_id
+    JOIN players p ON p.id = pk.player_id
+  `);
+  const ownerByTeam = new Map(pickRows.map((r) => [r.team_name.toLowerCase(), r.player_name]));
+
+  const qualified = [];
+  const possible = [];
+
+  for (const group of standings.children || []) {
+    for (const entry of group.standings?.entries || []) {
+      const espnName = entry.team?.displayName || '';
+      const name = STANDINGS_NAME_MAP[espnName] || espnName;
+      const note = entry.note?.description || '';
+      const owner = ownerByTeam.get(name.toLowerCase()) || null;
+      if (note === 'Advance to Round of 32') {
+        qualified.push({ name, group: group.name, owner });
+      } else if (note === 'Best 8 advance') {
+        possible.push({ name, group: group.name, owner });
+      }
+    }
+  }
+
+  return { qualified, possible };
+}
