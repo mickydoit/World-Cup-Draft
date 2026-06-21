@@ -20,7 +20,7 @@ export function renderLadder(ladder, groups = []) {
     <h2 class="wcs-title">World Cup Standings</h2>
     <div class="wcs-groups">
       ${groups.map(g => `
-        <div class="wcs-group">
+        <div class="wcs-group" data-expand-type="group">
           <span class="wcs-chip">Group ${esc(g.grp)}</span>
           <div class="wcs-table">
             <div class="wcs-row wcs-head">
@@ -171,7 +171,7 @@ function koMatch(m) {
   const awayTbd = m.tbd || (m.away_name == null && !m.away_confirmed);
   const allTbd  = homeTbd && awayTbd;
   return `
-    <div class="ko-match ${finished ? 'played' : ''} ${allTbd ? 'is-tbd' : ''}">
+    <div class="ko-match ${finished ? 'played' : ''} ${allTbd ? 'is-tbd' : ''}" data-expand-type="match">
       ${koSide(m.home_name, m.home_score, m.home_is_winner, finished, homeTbd, m.home_confirmed)}
       ${koSide(m.away_name, m.away_score, m.away_is_winner, finished, awayTbd, m.away_confirmed)}
     </div>`;
