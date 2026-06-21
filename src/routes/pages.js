@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getLadder, getFixturesView, getBracket } from '../repo.js';
+import { getLadder, getFixturesView, getBracket, getConfirmedQualifiers } from '../repo.js';
 
 const router = Router();
 
@@ -23,8 +23,11 @@ router.get('/fixtures', async (req, res, next) => {
 
 router.get('/bracket', async (req, res, next) => {
   try {
-    const bracket = await getBracket();
-    res.render('bracket', { title: 'Bracket', active: 'bracket', ...bracket });
+    const [bracket, { qualified, possible }] = await Promise.all([
+      getBracket(),
+      getConfirmedQualifiers(),
+    ]);
+    res.render('bracket', { title: 'Bracket', active: 'bracket', ...bracket, qualified, possible });
   } catch (err) {
     next(err);
   }
