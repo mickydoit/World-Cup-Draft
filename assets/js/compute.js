@@ -177,7 +177,7 @@ const KO_ROUNDS = [
   { stage: 'final', label: 'Final', expected: 1, pts: 5 },
 ];
 
-export function getBracket(data) {
+export function getBracket(data, r32Overlay = []) {
   const teamById = byId(data.teams);
   const owners = ownerNames(data);
   const ko = data.fixtures.filter((f) => KO_STAGES.includes(f.stage));
@@ -188,7 +188,31 @@ export function getBracket(data) {
 
   const rounds = KO_ROUNDS.map((rd) => {
     const matches = (byStage[rd.stage] || []).slice();
-    while (matches.length < rd.expected) matches.push({ tbd: true, stage: rd.stage });
+    while (matches.length < rd.expected) {
+      const idx = matches.length;
+      const ov = (rd.stage === 'R32' && r32Overlay[idx]) || null;
+      if (ov) {
+        // Overlay a known R32 matchup — one or both sides may still be TBD
+        const ownerFor = (name) => {
+          if (!name) return null;
+          const team = data.teams.find((t) => t.name.toLowerCase() === name.toLowerCase());
+          if (!team) return null;
+          const pick = data.picks.find((p) => p.team_id === team.id);
+          if (!pick) return null;
+          return (data.players.find((p) => p.id === pick.player_id) || {}).name || null;
+        };
+        matches.push({
+          tbd: false, stage: rd.stage, status: 'scheduled',
+          home_name: ov.home || null, away_name: ov.away || null,
+          home_confirmed: !!ov.home, away_confirmed: !!ov.away,
+          home_owner: ownerFor(ov.home), away_owner: ownerFor(ov.away),
+          home_score: null, away_score: null,
+          home_is_winner: false, away_is_winner: false,
+        });
+      } else {
+        matches.push({ tbd: true, stage: rd.stage });
+      }
+    }
     return { ...rd, matches };
   });
 
@@ -421,4 +445,46 @@ export function getQualifiers(data, standings) {
   }
 
   return { qualified, possible };
+}
+
+const SLUG_TO_STAGE_ESPN = {
+  'round-of-32': 'R32', 'round-of-16': 'R16',
+  'quarterfinals': 'QF', 'semifinals': 'SF',
+  'third-place': 'third', 'final': 'final',
+};
+
+/** Parse ESPN standings into winner/runnerUp per group (Group A, Group B, …) */
+export function getGroupPositions(standings) {
+  const positions = {};
+  for (const group of (standings?.children || [])) {
+    const qualified = (group.standings?.entries || [])
+      .filter((e) => e.note?.description === 'Advance to Round of 32')
+      .map((e) => ({
+        name: STANDINGS_NAME_MAP[e.team?.displayName] || e.team?.displayName || '',
+        pts: (e.stats?.find((s) => s.name === 'points')?.value) ?? 0,
+        gd:  (e.stats?.find((s) => s.name === 'pointDifferential')?.value) ?? 0,
+        gf:  (e.stats?.find((s) => s.name === 'pointsFor')?.value) ?? 0,
+      }))
+      .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+    if (qualified.length >= 1) positions[group.name] = { winner: qualified[0].name, runnerUp: qualified[1]?.name || null };
+  }
+  return positions; // { "Group A": { winner: "Mexico", runnerUp: "South Korea" }, … }
+}
+
+/**
+ * Resolve an ESPN placeholder slot name to an actual team name.
+ * Returns null when the slot is still undecided (3rd-place tiebreaker etc.).
+ */
+export function resolveEspnSlot(displayName, groupPositions) {
+  if (!displayName) return null;
+  // Already a real team (not a placeholder)
+  if (!displayName.includes('Place') && !displayName.includes('Winner')) {
+    return STANDINGS_NAME_MAP[displayName] || displayName;
+  }
+  const winnerMatch = displayName.match(/^Group ([A-L]) Winner$/i);
+  if (winnerMatch) return groupPositions[`Group ${winnerMatch[1]}`]?.winner || null;
+  const runnerMatch = displayName.match(/^Group ([A-L]) 2nd Place$/i);
+  if (runnerMatch) return groupPositions[`Group ${runnerMatch[1]}`]?.runnerUp || null;
+  // Third-place aggregated slot — can't resolve yet
+  return null;
 }
