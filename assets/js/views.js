@@ -158,19 +158,22 @@ export function renderFixtures(groups) {
 }
 
 // --------------------------------------------------------------- Bracket
-function koSide(name, score, isWinner, finished, tbd) {
+function koSide(name, score, isWinner, finished, tbd, confirmed) {
   return `
-    <div class="ko-side ${isWinner ? 'win' : ''} ${tbd ? 'tbd' : ''}">
+    <div class="ko-side ${isWinner ? 'win' : ''} ${tbd ? 'tbd' : ''} ${confirmed && !finished ? 'confirmed-q' : ''}">
       <span class="ko-team">${tbd ? 'TBD' : esc(name || 'TBD')}</span>
       <span class="ko-score">${finished && score != null ? score : ''}</span>
     </div>`;
 }
 function koMatch(m) {
   const finished = m.status === 'finished';
+  const homeTbd = m.tbd || (m.home_name == null && !m.home_confirmed);
+  const awayTbd = m.tbd || (m.away_name == null && !m.away_confirmed);
+  const allTbd  = homeTbd && awayTbd;
   return `
-    <div class="ko-match ${finished ? 'played' : ''} ${m.tbd ? 'is-tbd' : ''}">
-      ${koSide(m.home_name, m.home_score, m.home_is_winner, finished, m.tbd)}
-      ${koSide(m.away_name, m.away_score, m.away_is_winner, finished, m.tbd)}
+    <div class="ko-match ${finished ? 'played' : ''} ${allTbd ? 'is-tbd' : ''}">
+      ${koSide(m.home_name, m.home_score, m.home_is_winner, finished, homeTbd, m.home_confirmed)}
+      ${koSide(m.away_name, m.away_score, m.away_is_winner, finished, awayTbd, m.away_confirmed)}
     </div>`;
 }
 function bkCol(matches, side) {
@@ -195,24 +198,7 @@ function mbRow(feed1, feed2, advance) {
   </div>`;
 }
 
-export function renderBracket(b, qualifiers) {
-  const { qualified = [], possible = [] } = qualifiers || {};
-  const qualHtml = qualified.length > 0 ? `
-  <section class="qualifiers-section">
-    <h2 class="qualifiers-heading">Confirmed — Round of 32 <span class="qualifiers-count">${qualified.length}/32</span></h2>
-    <div class="qualifiers-grid">
-      ${qualified.map((q) => `
-      <div class="qualifier-card">
-        <span class="q-team">${esc(q.name)}</span>
-        <span class="q-meta">${esc(q.group)}${q.owner ? ` · <strong>${esc(q.owner)}</strong>` : ''}</span>
-      </div>`).join('')}
-      ${possible.length > 0 ? `
-      <div class="qualifier-card qualifier-card--maybe">
-        <span class="q-team">+${possible.length} third-place spots TBD</span>
-        <span class="q-meta">Best 8 of 12 third-placers advance</span>
-      </div>` : ''}
-    </div>
-  </section>` : '';
+export function renderBracket(b) {
 
   const [r32, r16, qf, sf, fin] = b.rounds.map(r => r.matches);
   const half = a => [a.slice(0, a.length / 2), a.slice(a.length / 2)];
@@ -245,7 +231,6 @@ export function renderBracket(b, qualifiers) {
       ? `<p class="hint">Advancing team highlighted. Points: R32=1, R16=2, QF=3, SF=4, Final=5.</p>`
       : `<p class="hint">Bracket fills in after the group stage.</p>`}
   </div>
-  ${qualHtml}
   <div class="bkt-page">
     <div class="bkt-header">
       <div class="bkt-hcol">R32</div>
