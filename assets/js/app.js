@@ -3,9 +3,31 @@
 
 import { store } from './store.js?v=17';
 import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView, getGroupStandings, getGroupPositions, resolveEspnSlot } from './compute.js?v=26';
-import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView, renderIdentityGate } from './views.js?v=51';
+import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView, renderIdentityGate } from './views.js?v=52';
 
 const root = document.getElementById('root');
+
+const modalEl = document.createElement('div');
+modalEl.id = 'lbh-modal';
+modalEl.className = 'lbh-modal-bg';
+modalEl.setAttribute('hidden', '');
+modalEl.innerHTML = '<div class="lbh-modal-box"><button class="lbh-modal-close" aria-label="Close">&#x2715;</button><div class="lbh-modal-content"></div></div>';
+document.body.appendChild(modalEl);
+const modalContent = modalEl.querySelector('.lbh-modal-content');
+function openModal(el) {
+  modalContent.innerHTML = `<div class="lbh-modal-zoom lbh-modal-${el.dataset.expandType}">${el.outerHTML}</div>`;
+  modalEl.removeAttribute('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  modalEl.setAttribute('hidden', '');
+  modalContent.innerHTML = '';
+  document.body.style.overflow = '';
+}
+modalEl.addEventListener('click', (e) => { if (e.target === modalEl || e.target.closest('.lbh-modal-close')) closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+document.addEventListener('click', (e) => { if (e.target.closest('#lbh-modal')) return; const el = e.target.closest('[data-expand-type]'); if (el) openModal(el); });
+
 const PASSWORD = (window.LBH_CONFIG || {}).ADMIN_PASSWORD || 'admin';
 const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
