@@ -1244,3 +1244,7 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
 .q-team { display: block; font-weight: 700; font-size: .78rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .q-meta { display: block; font-size: .65rem; color: var(--text-2); margin-top: .1rem; }
 .q-meta strong { color: var(--h1-color); font-weight: 700; }
+
+/* Bracket: confirmed R32 team slot (known team, match not yet played) */
+.ko-side.confirmed-q { border-left: 2px solid var(--h1-color); }
+.ko-side.confirmed-q .ko-team { color: var(--h1-color); font-weight: 700; }
