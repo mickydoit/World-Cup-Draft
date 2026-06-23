@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Fixtures — Design Preview</title>
+  <link rel="stylesheet" href="assets/css/styles.css?v=65" />
+  <style>
+    /* ── Override fixtures route to use the new green accent ── */
+    body[data-route="fixtures"] {
+      --h1-color:        #9FED00;
+      --nav-active-bg:   #9FED00;
+      --nav-active-color:#202123;
+      --hdr-text:        rgba(32,33,35,.5);
+      --hdr-text-full:   #202123;
+      --hdr-hover-bg:    rgba(0,0,0,.12);
+      --bnav-icon-color: #202123;
+    }
+
+    /* ── Fixture card: green gradient, black copy ── */
+    .fixture-card {
+      background: linear-gradient(90deg, #9FED00 0%, #AAF9C7 100%) !important;
+    }
+
+    /* ── "All played" badge in green ── */
+    .fxday-badge.done { color: #9FED00 !important; }
+
+    /* ── View Ladder button ── */
+    body[data-route="fixtures"] .view-btn {
+      background: linear-gradient(90deg, #9FED00 0%, #AAF9C7 100%);
+      color: #1e1e1e;
+    }
+    body[data-theme="dark"][data-route="fixtures"] .view-btn {
+      background: #9FED00;
+      color: #1e1e1e;
+    }
+  </style>
+</head>
+<body data-route="fixtures" data-theme="dark">
+
+  <header class="topbar">
+    <a class="brand" href="#">
+      <img class="brand-logo-img" src="assets/img/logo-black.svg" alt="Sanctuary Draft" width="80" height="36" />
+    </a>
+    <nav class="topbar-nav">
+      <a href="#">Ladder</a>
+      <a href="#" class="active">Fixtures</a>
+      <a href="#">Teams</a>
+      <a href="#">Bracket</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h1>Fixtures</h1>
+    <p class="hint" style="margin-bottom:1rem">Times shown in AEST. Owner names appear once the draft is complete.</p>
+
+    <!-- Past day — collapsed -->
+    <details class="fxday done">
+      <summary class="fxday-header">
+        <span class="fxday-title">Sun 14 Jun</span>
+        <span class="fxday-badge done">All played</span>
+      </summary>
+      <div class="fxday-body">
+
+        <div class="fixture-card played">
+          <div class="fxc-top">
+            <span class="fxc-time">02:00</span>
+            <span class="fxc-group">Group A</span>
+          </div>
+          <div class="fxc-match">
+            <span class="fxc-team">Mexico</span>
+            <span class="fxc-sep">0&ndash;2</span>
+            <span class="fxc-team">USA</span>
+          </div>
+          <div class="fxc-owners">
+            <span class="fxc-owner">Luke</span>
+            <span class="fxc-vs">vs</span>
+            <span class="fxc-owner winner">Micky</span>
+          </div>
+        </div>
+
+        <div class="fixture-card played">
+          <div class="fxc-top">
+            <span class="fxc-time">05:00</span>
+            <span class="fxc-group">Group B</span>
+          </div>
+          <div class="fxc-match">
+            <span class="fxc-team">Germany</span>
+            <span class="fxc-sep">7&ndash;0</span>
+            <span class="fxc-team">Curaçao</span>
+          </div>
+          <div class="fxc-owners">
+            <span class="fxc-owner winner">Jake</span>
+            <span class="fxc-vs">vs</span>
+            <span class="fxc-owner dim">—</span>
+          </div>
+        </div>
+
+        <div class="fixture-card played">
+          <div class="fxc-top">
+            <span class="fxc-time">08:00</span>
+            <span class="fxc-group">Group C</span>
+          </div>
+          <div class="fxc-match">
+            <span class="fxc-team">Netherlands</span>
+            <span class="fxc-sep">2&ndash;2</span>
+            <span class="fxc-team">Japan</span>
+          </div>
+          <div class="fxc-owners">
+            <span class="fxc-owner draw">Alvin</span>
+            <span class="fxc-vs">vs</span>
+            <span class="fxc-owner draw">Luke</span>
+          </div>
+        </div>
+
+      </div>
+    </details>
+
+    <!-- Live / active day — open -->
+    <details class="fxday" open>
+      <summary class="fxday-header">
+        <span class="fxday-title">Mon 15 Jun</span>
+        <span class="fxday-badge">2/4 played</span>
+      </summary>
+      <div class="fxday-body">
+
+        <div class="fixture-card played">
+          <div class="fxc-top">
+            <span class="fxc-time">02:00</span>
+            <span class="fxc-group">Group D</span>
+          </div>
+          <div class="fxc-match">
+            <span class="fxc-team">France</span>
+            <span class="fxc-sep">4&ndash;0</span>
+            <span class="fxc-team">Saudi Arabia</span>
+          </div>
+          <div class="fxc-owners">
+            <span class="fxc-owner winner">Alvin</span>
+            <span class="fxc-vs">vs</span>
+            <span class="fxc-owner dim">—</span>
+          </div>
+        </div>
+
+        <div class="fixture-card played">
+          <div class="fxc-top">
+            <span class="fxc-time">05:00</span>
+            <span class="fxc-group">Group E</span>
+          </div>
+          <div class="fxc-match">
+            <span class="fxc-team">Spain</span>
+            <span class="fxc-sep">1&ndash;1</span>
+            <span class="fxc-team">Portugal</span>
+          </div>
+          <div class="fxc-owners">
+            <span class="fxc-owner draw">Jake</span>
+            <span class="fxc-vs">vs</span>
+            <span class="fxc-owner draw">Luke</span>
+          </div>
+        </div>
+
+        <!-- Upcoming — no score yet -->
+        <div class="fixture-card">
+          <div class="fxc-top">
+            <span class="fxc-time">08:00</span>
+            <span class="fxc-group">Group F</span>
+          </div>
+          <div class="fxc-match">
+            <span class="fxc-team">Brazil</span>
+            <span class="fxc-sep">v</span>
+            <span class="fxc-team">Argentina</span>
+          </div>
+          <div class="fxc-owners">
+            <span class="fxc-owner">Micky</span>
+            <span class="fxc-vs">vs</span>
+            <span class="fxc-owner">Luke</span>
+          </div>
+        </div>
+
+        <div class="fixture-card">
+          <div class="fxc-top">
+            <span class="fxc-time">11:00</span>
+            <span class="fxc-group">Group F</span>
+          </div>
+          <div class="fxc-match">
+            <span class="fxc-team">Italy</span>
+            <span class="fxc-sep">v</span>
+            <span class="fxc-team">England</span>
+          </div>
+          <div class="fxc-owners">
+            <span class="fxc-owner">Jake</span>
+            <span class="fxc-vs">vs</span>
+            <span class="fxc-owner">Alvin</span>
+          </div>
+        </div>
+
+      </div>
+    </details>
+
+    <!-- Future day — collapsed -->
+    <details class="fxday">
+      <summary class="fxday-header">
+        <span class="fxday-title">Tue 16 Jun</span>
+        <span class="fxday-badge">4 matches</span>
+      </summary>
+      <div class="fxday-body">
+
+        <div class="fixture-card">
+          <div class="fxc-top">
+            <span class="fxc-time">02:00</span>
+            <span class="fxc-group">Group G</span>
+          </div>
+          <div class="fxc-match">
+            <span class="fxc-team">Belgium</span>
+            <span class="fxc-sep">v</span>
+            <span class="fxc-team">Morocco</span>
+          </div>
+          <div class="fxc-owners">
+            <span class="fxc-owner">Luke</span>
+            <span class="fxc-vs">vs</span>
+            <span class="fxc-owner dim">—</span>
+          </div>
+        </div>
+
+        <div class="fixture-card">
+          <div class="fxc-top">
+            <span class="fxc-time">05:00</span>
+            <span class="fxc-group">Group H</span>
+          </div>
+          <div class="fxc-match">
+            <span class="fxc-team">Uruguay</span>
+            <span class="fxc-sep">v</span>
+            <span class="fxc-team">South Korea</span>
+          </div>
+          <div class="fxc-owners">
+            <span class="fxc-owner">Micky</span>
+            <span class="fxc-vs">vs</span>
+            <span class="fxc-owner">Micky</span>
+          </div>
+        </div>
+
+      </div>
+    </details>
+
+    <div class="view-btn-wrap">
+      <a class="view-btn" href="#">View Ladder</a>
+    </div>
+  </main>
+
+</body>
+</html>

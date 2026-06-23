@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Stats — Preview</title>
+  <link rel="stylesheet" href="assets/css/styles.css?v=65" />
+  <style>
+    body[data-route="stats"] {
+      --h1-color:        #9FED00;
+      --nav-active-bg:   #9FED00;
+      --nav-active-color:#202123;
+      --hdr-text:        rgba(32,33,35,.5);
+      --hdr-text-full:   #202123;
+      --hdr-hover-bg:    rgba(0,0,0,.12);
+      --bnav-icon-color: #202123;
+    }
+
+    /* ── Page heading ── */
+    .stats-h1 {
+      font-family: var(--font);
+      font-size: clamp(2.6rem, 10vw, 3.5rem);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #9FED00;
+      text-align: center;
+      margin: 1.5rem 0 1.75rem;
+      line-height: 1;
+    }
+
+    /* ── Bonus pills ── */
+    .stats-summary {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 2rem;
+    }
+    .stat-pill {
+      flex: 1;
+      border-radius: 12px;
+      padding: 1rem .4rem .75rem;
+      text-align: center;
+    }
+    .stat-pill.leader { background: linear-gradient(180deg, #caab3e 0%, #b1e8aa 100%); }
+    .stat-pill.other  { background: #8bffec; }
+    .stat-pill-val {
+      display: block;
+      font-family: var(--font);
+      font-size: 1.65rem;
+      font-weight: 900;
+      color: #000;
+      line-height: 1;
+    }
+    .stat-pill-label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-top: .35rem;
+    }
+
+    /* ── Section divider label ── */
+    .section-label {
+      font-family: var(--font);
+      font-size: .85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--text-3);
+      margin: 1.75rem 0 .9rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .section-label-badge {
+      font-size: .7rem;
+      background: rgba(168,85,247,.15);
+      color: #A855F7;
+      border: 1px solid rgba(168,85,247,.3);
+      border-radius: 99px;
+      padding: .12rem .45rem;
+      letter-spacing: .05em;
+      font-weight: 700;
+    }
+
+    /* ── Award cards grid ── */
+    .awards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .75rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (min-width: 540px) { .awards-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .award-card {
+      background: #393939;
+      border: 1px solid #808080;
+      border-radius: 12px;
+      padding: 1.1rem 1rem 1rem;
+    }
+    .award-card-label {
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--accent);
+      display: block;
+      margin-bottom: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .award-card-row {
+      display: flex;
+      align-items: baseline;
+      gap: .3rem;
+      flex-wrap: wrap;
+    }
+    .award-card-player { font-size: 1.05rem; color: var(--accent); }
+    .award-card-sep    { font-size: 1.05rem; font-weight: 900; color: var(--accent); }
+    .award-card-team   { font-family: var(--font); font-size: 1.05rem; font-weight: 900; color: var(--accent); }
+    .award-card-owner  {
+      font-size: .8rem;
+      font-style: italic;
+      color: var(--accent);
+      opacity: .75;
+      display: block;
+      margin-top: .25rem;
+    }
+    .award-card-footer {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-top: .7rem;
+    }
+    .award-card-stat {
+      font-family: var(--font);
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--accent);
+    }
+    .award-card-pts {
+      font-size: .7rem;
+      font-weight: 600;
+      background: var(--accent);
+      color: #202123;
+      border-radius: 4px;
+      padding: .18rem .45rem;
+      white-space: nowrap;
+    }
+    .award-card.pending { opacity: .55; }
+
+    /* ── Section chip (above each table) ── */
+    .section-chip {
+      display: inline-block;
+      background: var(--accent);
+      color: #202123;
+      font-size: .7rem;
+      font-weight: 700;
+      padding: .22rem .6rem;
+      border-radius: 4px;
+      margin-bottom: .45rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    /* ── Stat table ── */
+    .stat-section { margin-bottom: 1.5rem; }
+    .stat-table {
+      background: #393939;
+      border: 1px solid #808080;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .stat-row {
+      display: grid;
+      grid-template-columns: 1.8rem 1fr auto auto;
+      align-items: center;
+      gap: .5rem;
+      padding: .85rem 1.1rem;
+      border-bottom: 1px solid rgba(128,128,128,.25);
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-row.stat-head {
+      background: rgba(0,0,0,.2);
+      padding: .5rem 1.1rem;
+    }
+    .stat-rank {
+      font-family: var(--font);
+      font-size: .85rem;
+      font-weight: 900;
+      color: var(--accent);
+      text-align: center;
+    }
+    .stat-row.stat-head .stat-rank { font-weight: 400; font-size: .75rem; }
+
+    .stat-team-name {
+      font-family: var(--font);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .stat-row.stat-head .stat-team-name { font-weight: 400; font-size: .75rem; }
+
+    .stat-sub {
+      font-size: .8rem;
+      color: var(--accent);
+      opacity: .7;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .stat-row.stat-head .stat-sub { font-size: .75rem; }
+
+    .stat-val {
+      font-family: var(--font);
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--accent);
+      text-align: right;
+      min-width: 1.75rem;
+    }
+    .stat-row.stat-head .stat-val { font-weight: 400; font-size: .75rem; }
+
+    /* ── Group chip grid ── */
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .6rem;
+    }
+    @media (min-width: 480px) { .group-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 640px) { .group-grid { grid-template-columns: repeat(6, 1fr); } }
+
+    .group-chip {
+      background: #393939;
+      border: 1px solid #808080;
+      border-radius: 12px;
+      padding: .85rem .65rem;
+      text-align: center;
+    }
+    .group-chip-label {
+      font-size: .68rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: rgba(255,255,255,.4);
+      display: block;
+      margin-bottom: .28rem;
+    }
+    .group-chip-team {
+      font-family: var(--font);
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--accent);
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .group-chip-owner {
+      font-size: .75rem;
+      color: rgba(255,255,255,.4);
+      display: block;
+      margin-top: .15rem;
+    }
+    .group-chip-pts {
+      font-size: .75rem;
+      color: var(--accent);
+      font-weight: 700;
+      display: block;
+      margin-top: .28rem;
+    }
+
+    /* ── FIFA pending cards ── */
+    .fifa-award-list { display: flex; flex-direction: column; gap: .6rem; }
+    .fifa-pending-card {
+      background: #393939;
+      border: 1px solid #808080;
+      border-radius: 12px;
+      padding: 1.2rem 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .fifa-pending-body { flex: 1; }
+    .fifa-pending-name {
+      font-family: var(--font);
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--accent);
+      display: block;
+    }
+    .fifa-pending-desc {
+      font-size: .85rem;
+      color: rgba(255,255,255,.45);
+      display: block;
+      margin-top: .18rem;
+    }
+    .fifa-pending-right { text-align: right; flex-shrink: 0; }
+    .fifa-pending-pts {
+      font-family: var(--font);
+      font-size: 1.65rem;
+      font-weight: 900;
+      color: var(--accent);
+      display: block;
+    }
+    .fifa-pending-pts-lbl {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: rgba(255,255,255,.4);
+      display: block;
+    }
+
+    /* ── View Ladder button ── */
+    .view-btn-wrap { text-align: center; margin-top: 2.5rem; padding-bottom: 2rem; }
+    .view-btn {
+      display: inline-block;
+      background: #9FED00;
+      color: #202123;
+      font-family: var(--font);
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      padding: .9rem 3rem;
+      border-radius: 99px;
+    }
+  </style>
+</head>
+<body data-route="stats" data-theme="dark">
+
+  <header class="topbar">
+    <a class="brand" href="#">
+      <img class="brand-logo-img" src="assets/img/logo-black.svg" alt="Sanctuary Draft" width="80" height="36" />
+    </a>
+    <nav class="topbar-nav">
+      <a href="#">Ladder</a>
+      <a href="#">Fixtures</a>
+      <a href="#">Teams</a>
+      <a href="#">Bracket</a>
+      <a href="#" class="active">Stats</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h1 class="stats-h1">Stats</h1>
+
+    <!-- Bonus pts tally -->
+    <div class="stats-summary">
+      <div class="stat-pill leader">
+        <span class="stat-pill-val">+10</span>
+        <span class="stat-pill-label">Jake</span>
+      </div>
+      <div class="stat-pill other">
+        <span class="stat-pill-val">+5</span>
+        <span class="stat-pill-label">Micky</span>
+      </div>
+      <div class="stat-pill other">
+        <span class="stat-pill-val">+4</span>
+        <span class="stat-pill-label">Alvin</span>
+      </div>
+      <div class="stat-pill other">
+        <span class="stat-pill-val">+2</span>
+        <span class="stat-pill-label">Luke</span>
+      </div>
+    </div>
+
+    <!-- ═══ LIVE STATS ═══ -->
+    <div class="section-label">Live Stats <span class="section-label-badge">auto-updated</span></div>
+
+    <!-- Award overview cards -->
+    <div class="awards-grid">
+
+      <div class="award-card" style="--accent:#8bffec">
+        <span class="award-card-label">Golden Boot</span>
+        <div class="award-card-row">
+          <span class="award-card-player">T. Müller</span>
+          <span class="award-card-sep">·</span>
+          <span class="award-card-team">Germany</span>
+        </div>
+        <span class="award-card-owner">Micky's team</span>
+        <div class="award-card-footer">
+          <span class="award-card-stat">6 Goals</span>
+          <span class="award-card-pts">+0.25 pts</span>
+        </div>
+      </div>
+
+      <div class="award-card" style="--accent:#f4ff7b">
+        <span class="award-card-label">Top Assists</span>
+        <div class="award-card-row">
+          <span class="award-card-player">Pedri</span>
+          <span class="award-card-sep">·</span>
+          <span class="award-card-team">Spain</span>
+        </div>
+        <span class="award-card-owner">Jake's team</span>
+        <div class="award-card-footer">
+          <span class="award-card-stat">5 Assists</span>
+          <span class="award-card-pts">+0.25 pts</span>
+        </div>
+      </div>
+
+      <div class="award-card" style="--accent:#9FED00">
+        <span class="award-card-label">Clean Sheets</span>
+        <div class="award-card-row">
+          <span class="award-card-team">Italy</span>
+        </div>
+        <span class="award-card-owner">Jake's team</span>
+        <div class="award-card-footer">
+          <span class="award-card-stat">3 CS</span>
+          <span class="award-card-pts">+0.25 pts</span>
+        </div>
+      </div>
+
+      <div class="award-card" style="--accent:#ff6b9d">
+        <span class="award-card-label">Most Red Cards</span>
+        <div class="award-card-row">
+          <span class="award-card-team">Colombia</span>
+        </div>
+        <span class="award-card-owner">Luke's team</span>
+        <div class="award-card-footer">
+          <span class="award-card-stat">3 Reds</span>
+          <span class="award-card-pts">+0.25 pts</span>
+        </div>
+      </div>
+
+      <div class="award-card" style="--accent:#8bffec">
+        <span class="award-card-label">Fair Play</span>
+        <div class="award-card-row">
+          <span class="award-card-team">Japan</span>
+        </div>
+        <span class="award-card-owner">Alvin's team</span>
+        <div class="award-card-footer">
+          <span class="award-card-stat">0 Cards</span>
+          <span class="award-card-pts">+0.25 pts</span>
+        </div>
+      </div>
+
+      <div class="award-card" style="--accent:#f4ff7b">
+        <span class="award-card-label">Top of Group</span>
+        <div class="award-card-row">
+          <span class="award-card-player">Most group wins</span>
+        </div>
+        <span class="award-card-owner">+0.25 pt per team</span>
+        <div class="award-card-footer">
+          <span class="award-card-stat">See below</span>
+          <span class="award-card-pts">+0.25/win</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Golden Boot detail -->
+    <div class="stat-section" style="--accent:#8bffec">
+      <span class="section-chip">Golden Boot</span>
+      <div class="stat-table">
+        <div class="stat-row stat-head">
+          <div class="stat-rank">#</div>
+          <div class="stat-team-name">Player · Team</div>
+          <div class="stat-sub">Owner</div>
+          <div class="stat-val">G</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">1</div>
+          <div><span class="stat-team-name">T. Müller · 🇩🇪 Germany</span></div>
+          <div class="stat-sub">Micky</div>
+          <div class="stat-val">6</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">2</div>
+          <div><span class="stat-team-name">K. Mbappé · 🇫🇷 France</span></div>
+          <div class="stat-sub">Alvin</div>
+          <div class="stat-val">5</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">3</div>
+          <div><span class="stat-team-name">L. Messi · 🇦🇷 Argentina</span></div>
+          <div class="stat-sub">Luke</div>
+          <div class="stat-val">4</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">3</div>
+          <div><span class="stat-team-name">V. Osimhen · 🇳🇬 Nigeria</span></div>
+          <div class="stat-sub">Micky</div>
+          <div class="stat-val">4</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">5</div>
+          <div><span class="stat-team-name">H. Kane · 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England</span></div>
+          <div class="stat-sub">Alvin</div>
+          <div class="stat-val">3</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Assists detail -->
+    <div class="stat-section" style="--accent:#f4ff7b">
+      <span class="section-chip">Top Assists</span>
+      <div class="stat-table">
+        <div class="stat-row stat-head">
+          <div class="stat-rank">#</div>
+          <div class="stat-team-name">Player · Team</div>
+          <div class="stat-sub">Owner</div>
+          <div class="stat-val">A</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">1</div>
+          <div><span class="stat-team-name">Pedri · 🇪🇸 Spain</span></div>
+          <div class="stat-sub">Jake</div>
+          <div class="stat-val">5</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">2</div>
+          <div><span class="stat-team-name">K. De Bruyne · 🇧🇪 Belgium</span></div>
+          <div class="stat-sub">Luke</div>
+          <div class="stat-val">4</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">3</div>
+          <div><span class="stat-team-name">B. Saka · 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England</span></div>
+          <div class="stat-sub">Alvin</div>
+          <div class="stat-val">3</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">3</div>
+          <div><span class="stat-team-name">R. Leão · 🇵🇹 Portugal</span></div>
+          <div class="stat-sub">Luke</div>
+          <div class="stat-val">3</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clean Sheets detail -->
+    <div class="stat-section" style="--accent:#9FED00">
+      <span class="section-chip">Clean Sheets</span>
+      <div class="stat-table">
+        <div class="stat-row stat-head">
+          <div class="stat-rank">#</div>
+          <div class="stat-team-name">Team</div>
+          <div class="stat-sub">GA</div>
+          <div class="stat-val">CS</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">1</div>
+          <div><span class="stat-team-name">🇮🇹 Italy</span></div>
+          <div class="stat-sub">Jake · 0 GA</div>
+          <div class="stat-val">3</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">2</div>
+          <div><span class="stat-team-name">🇵🇹 Portugal</span></div>
+          <div class="stat-sub">Luke · 1 GA</div>
+          <div class="stat-val">2</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">2</div>
+          <div><span class="stat-team-name">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England</span></div>
+          <div class="stat-sub">Alvin · 1 GA</div>
+          <div class="stat-val">2</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">4</div>
+          <div><span class="stat-team-name">🇩🇪 Germany</span></div>
+          <div class="stat-sub">Micky · 1 GA</div>
+          <div class="stat-val">1</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Most Red Cards detail -->
+    <div class="stat-section" style="--accent:#ff6b9d">
+      <span class="section-chip">Most Red Cards</span>
+      <div class="stat-table">
+        <div class="stat-row stat-head">
+          <div class="stat-rank">#</div>
+          <div class="stat-team-name">Team</div>
+          <div class="stat-sub">YC</div>
+          <div class="stat-val">RC</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">1</div>
+          <div><span class="stat-team-name">🇨🇴 Colombia</span></div>
+          <div class="stat-sub">Luke · 7 YC</div>
+          <div class="stat-val">3</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">2</div>
+          <div><span class="stat-team-name">🇸🇳 Senegal</span></div>
+          <div class="stat-sub">Alvin · 5 YC</div>
+          <div class="stat-val">2</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">2</div>
+          <div><span class="stat-team-name">🇦🇷 Argentina</span></div>
+          <div class="stat-sub">Luke · 8 YC</div>
+          <div class="stat-val">2</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fair Play detail -->
+    <div class="stat-section" style="--accent:#8bffec">
+      <span class="section-chip">Fair Play — Fewest Cards</span>
+      <div class="stat-table">
+        <div class="stat-row stat-head">
+          <div class="stat-rank">#</div>
+          <div class="stat-team-name">Team</div>
+          <div class="stat-sub">RC</div>
+          <div class="stat-val">YC</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">1</div>
+          <div><span class="stat-team-name">🇯🇵 Japan</span></div>
+          <div class="stat-sub">Alvin · 0 RC</div>
+          <div class="stat-val">0</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">2</div>
+          <div><span class="stat-team-name">🇰🇷 South Korea</span></div>
+          <div class="stat-sub">Micky · 0 RC</div>
+          <div class="stat-val">1</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-rank">3</div>
+          <div><span class="stat-team-name">🇵🇹 Portugal</span></div>
+          <div class="stat-sub">Luke · 0 RC</div>
+          <div class="stat-val">2</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top of Group -->
+    <div class="stat-section" style="--accent:#f4ff7b">
+      <span class="section-chip">Top of Group</span>
+      <div class="group-grid">
+        <div class="group-chip">
+          <span class="group-chip-label">Group A</span>
+          <span class="group-chip-team">🇩🇪 Germany</span>
+          <span class="group-chip-owner">Micky</span>
+          <span class="group-chip-pts">+0.25</span>
+        </div>
+        <div class="group-chip">
+          <span class="group-chip-label">Group B</span>
+          <span class="group-chip-team">🇪🇸 Spain</span>
+          <span class="group-chip-owner">Jake</span>
+          <span class="group-chip-pts">+0.25</span>
+        </div>
+        <div class="group-chip">
+          <span class="group-chip-label">Group C</span>
+          <span class="group-chip-team">🇫🇷 France</span>
+          <span class="group-chip-owner">Alvin</span>
+          <span class="group-chip-pts">+0.25</span>
+        </div>
+        <div class="group-chip">
+          <span class="group-chip-label">Group D</span>
+          <span class="group-chip-team">🇧🇷 Brazil</span>
+          <span class="group-chip-owner">Micky</span>
+          <span class="group-chip-pts">+0.25</span>
+        </div>
+        <div class="group-chip">
+          <span class="group-chip-label">Group E</span>
+          <span class="group-chip-team">🇦🇷 Argentina</span>
+          <span class="group-chip-owner">Luke</span>
+          <span class="group-chip-pts">+0.25</span>
+        </div>
+        <div class="group-chip">
+          <span class="group-chip-label">Group F</span>
+          <span class="group-chip-team">🇮🇹 Italy</span>
+          <span class="group-chip-owner">Jake</span>
+          <span class="group-chip-pts">+0.25</span>
+        </div>
+        <div class="group-chip" style="opacity:.4">
+          <span class="group-chip-label">Group G</span>
+          <span class="group-chip-team">In progress</span>
+          <span class="group-chip-owner">—</span>
+          <span class="group-chip-pts">TBD</span>
+        </div>
+        <div class="group-chip" style="opacity:.4">
+          <span class="group-chip-label">Group H</span>
+          <span class="group-chip-team">In progress</span>
+          <span class="group-chip-owner">—</span>
+          <span class="group-chip-pts">TBD</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ FIFA AWARDS ═══ -->
+    <div class="section-label">FIFA Awards <span class="section-label-badge">announced at end</span></div>
+    <p class="hint" style="margin-bottom:1rem">Decided by FIFA at tournament end. Points go to the owner of the winning player's team.</p>
+
+    <div class="fifa-award-list" style="--accent:#f4ff7b">
+      <div class="fifa-pending-card">
+        <div class="fifa-pending-body">
+          <span class="fifa-pending-name">Golden Glove</span>
+          <span class="fifa-pending-desc">Best goalkeeper — announced by FIFA. Owner of that keeper's team wins.</span>
+        </div>
+        <div class="fifa-pending-right">
+          <span class="fifa-pending-pts">+.25</span>
+          <span class="fifa-pending-pts-lbl">bonus pts</span>
+        </div>
+      </div>
+      <div class="fifa-pending-card">
+        <div class="fifa-pending-body">
+          <span class="fifa-pending-name">Best Young Player</span>
+          <span class="fifa-pending-desc">FIFA's best U21 player. Owner of that player's team wins.</span>
+        </div>
+        <div class="fifa-pending-right">
+          <span class="fifa-pending-pts">+.25</span>
+          <span class="fifa-pending-pts-lbl">bonus pts</span>
+        </div>
+      </div>
+      <div class="fifa-pending-card">
+        <div class="fifa-pending-body">
+          <span class="fifa-pending-name">Goal of the Tournament</span>
+          <span class="fifa-pending-desc">FIFA fan vote. Owner of the scoring player's team wins.</span>
+        </div>
+        <div class="fifa-pending-right">
+          <span class="fifa-pending-pts">+.25</span>
+          <span class="fifa-pending-pts-lbl">bonus pts</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="view-btn-wrap">
+      <a class="view-btn" href="#">View Ladder</a>
+    </div>
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+name: Keepalive
+
+# GitHub silently disables scheduled workflows on repos with no recent activity.
+# This workflow runs monthly and creates a dummy commit so the repo stays "active"
+# and the sync-scores schedule keeps firing.
+on:
+  schedule:
+    - cron: '0 12 1 * *' # 1st of every month at noon UTC
+  workflow_dispatch: {}
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Touch keepalive timestamp
+        run: |
+          date -u > .github/keepalive
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/keepalive
+          git commit -m "chore: keepalive [skip ci]"
+          git push

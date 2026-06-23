@@ -1,0 +1,31 @@
+<%- include('partials/head') %>
+<h1>Fixtures <span class="live-page-badge">LIVE</span></h1>
+<p class="hint">In kickoff order. Each match shows the two nations and, once the draft is done, which player owns them. Times shown in AEST. Scores update automatically.</p>
+<% groups.forEach((g) => { %>
+  <section class="fxgroup">
+    <h2><%= g.title %></h2>
+    <ul class="fixtures">
+      <% g.fixtures.forEach((f) => { %>
+        <li id="fx-<%= f.id %>" class="fixture <%= f.status === 'finished' ? 'played' : f.status === 'live' ? 'live' : '' %>">
+          <div class="fxtop">
+            <span class="fxtime"><%= f.time_label %><% if (f.status === 'live') { %> <span class="live-dot"></span><% } %></span>
+            <span class="fxtag"><%= f.stage_label %></span>
+          </div>
+          <div class="teams">
+            <span class="team home"><%= f.home_name %></span>
+            <span class="score">
+              <% if (f.status === 'finished' || f.status === 'live') { %><%= f.home_score %>&ndash;<%= f.away_score %><% } else { %>v<% } %>
+            </span>
+            <span class="team away"><%= f.away_name %></span>
+          </div>
+          <div class="owners">
+            <span class="<%= f.home_owner ? 'owned' : 'unowned' %>"><%= f.home_owner || '—' %></span>
+            <span class="vs">vs</span>
+            <span class="<%= f.away_owner ? 'owned' : 'unowned' %>"><%= f.away_owner || '—' %></span>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+  </section>
+<% }) %>
+<%- include('partials/foot') %>
