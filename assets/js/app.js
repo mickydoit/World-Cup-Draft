@@ -2,8 +2,8 @@
 // Pages base path with no server rewrites.
 
 import { store } from './store.js?v=17';
-import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView, getGroupStandings, getStats, getGroupPositions, resolveEspnSlot } from './compute.js?v=28';
-import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView, renderStats, renderIdentityGate } from './views.js?v=52';
+import { getLadder, getFixturesView, getBracket, getDraftState, getTeamsView, getPlayerView, getTeamView, getGroupStandings, getGroupPositions, resolveEspnSlot } from './compute.js?v=29';
+import { renderLadder, renderFixtures, renderBracket, renderDraft, renderAdmin, renderLogin, renderTeamsOverview, renderPlayerView, renderTeamView, renderIdentityGate } from './views.js?v=53';
 
 const root = document.getElementById('root');
 
@@ -96,7 +96,6 @@ const NAV = [
   { route: '/fixtures', label: 'Fixtures', key: 'fixtures' },
   { route: '/bracket', label: 'Bracket', key: 'bracket' },
   { route: '/draft', label: 'Teams', key: 'draft' },
-  { route: '/stats', label: 'Stats', key: 'stats' },
 ];
 
 function currentRoute() {
@@ -107,7 +106,6 @@ function activeKey(route) {
   if (route.startsWith('/fixtures')) return 'fixtures';
   if (route.startsWith('/bracket')) return 'bracket';
   if (route.startsWith('/draft')) return 'draft';
-  if (route.startsWith('/stats')) return 'stats';
   if (route.startsWith('/admin') || route.startsWith('/login')) return 'admin';
   return '';
 }
@@ -149,9 +147,6 @@ function headerHtml(route) {
     </a>
     <a href="#/bracket" class="bnav-item ${ak === 'bracket' ? 'active' : ''}" aria-label="Bracket">
       <span class="bnav-icon bnav-bracket"></span>
-    </a>
-    <a href="#/stats" class="bnav-item ${ak === 'stats' ? 'active' : ''}" aria-label="Stats">
-      <span class="bnav-icon bnav-stats"></span>
     </a>
     <a href="${isAdmin ? '#/admin' : '#/login'}" class="bnav-item ${ak === 'admin' ? 'active' : ''}" aria-label="Admin">
       <span class="bnav-icon bnav-admin"></span>
@@ -256,12 +251,6 @@ async function render(opts = {}) {
         }
         break;
       }
-      case '/stats': {
-        let statsData = { playerStats: [], awardWinners: [] };
-        try { statsData = await store.loadStats(); } catch { /* show empty state */ }
-        body = renderStats(getStats(data, statsData));
-        break;
-      }
       case '/admin':
         if (!isAdmin) { body = renderLogin(loginError); loginError = null; }
         else {
@@ -278,13 +267,9 @@ async function render(opts = {}) {
         }
         break;
       case '/':
-      default: {
-        let ladderStats = { playerStats: [], awardWinners: [] };
-        try { ladderStats = await store.loadStats(); } catch { /* show ladder without bonus */ }
-        const ladderStatsResult = getStats(data, ladderStats);
-        body = renderLadder(getLadder(data, ladderStatsResult.bonusByPlayer), getGroupStandings(data));
+      default:
+        body = renderLadder(getLadder(data), getGroupStandings(data));
         break;
-      }
     }
   }
   paint(route, body);
@@ -333,7 +318,7 @@ function scrollToCurrentMatch(route) {
 // Ladder + fixtures refresh themselves so entered scores appear without a reload.
 function setAutoRefresh(route) {
   if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
-  if (route === '/' || route === '/fixtures' || route === '/stats') {
+  if (route === '/' || route === '/fixtures') {
     refreshTimer = setInterval(() => { if (currentRoute() === route) render(); }, route === '/fixtures' ? 30000 : 60000);
   } else if (route === '/draft') {
     // Waiting players poll so picks appear live; the person mid-pick isn't yanked.
