@@ -24,7 +24,7 @@
   <!-- Cache-bust: redirect to a versioned URL so stale cached pages reload once -->
   <script>
     (function () {
-      var V = '68';
+      var V = '69';
       try {
         if (localStorage.getItem('_lbhv') !== V) {
           localStorage.setItem('_lbhv', V);
@@ -35,7 +35,7 @@
       } catch (e) {}
     })();
   </script>
-  <script src="config.js"></script>
+  <script src="config.js?v=2"></script>
 </head>
 <body data-route="ladder" data-theme="dark">
   <div id="splash">
