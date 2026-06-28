@@ -214,7 +214,7 @@ a:hover { text-decoration: underline; }
 }
 @media (min-width: 768px) {
   .splash-logo-img { width: 40vw; max-width: 320px; }
-  .splash-player-wrap { max-width: 520px; bottom: -15%; }
+  .splash-player-wrap { max-width: 520px; bottom: auto; top: 50%; }
 }
 
 /* ---- TOPBAR ---- */
