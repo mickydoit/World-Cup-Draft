@@ -34,7 +34,7 @@ function survivingTeams(fixtures) {
     if (f.home_team_id != null) qualified.add(f.home_team_id);
     if (f.away_team_id != null) qualified.add(f.away_team_id);
   }
-  const bracketDrawn = qualified.size > 0;
+  const bracketDrawn = qualified.size >= 32;
 
   // Teams that lost a finished knockout match are knocked out.
   const eliminated = new Set();
@@ -209,9 +209,28 @@ export function getBracket(data, r32Overlay = []) {
     const matches = rd.stage === 'R32'
       ? (byStage['R32'] || []).filter((m) => m.home_name != null || m.away_name != null)
       : (byStage[rd.stage] || []).slice();
+
+    // Build set of team names already covered by real DB fixtures, then walk the overlay
+    // sequentially skipping any entry whose teams are already represented — this prevents
+    // duplicates when ESPN returns all 16 R32 matches but the DB only has a subset confirmed.
+    const dbNames = rd.stage === 'R32'
+      ? new Set(matches.flatMap((m) => [m.home_name, m.away_name].filter(Boolean).map((n) => n.toLowerCase())))
+      : null;
+    let ovPtr = 0;
+
     while (matches.length < rd.expected) {
-      const idx = matches.length;
-      const ov = (rd.stage === 'R32' && r32Overlay[idx]) || null;
+      let ov = null;
+      if (rd.stage === 'R32' && r32Overlay) {
+        while (ovPtr < r32Overlay.length) {
+          const cand = r32Overlay[ovPtr++];
+          if (!cand) continue;
+          const hIn = cand.home && dbNames.has(cand.home.toLowerCase());
+          const aIn = cand.away && dbNames.has(cand.away.toLowerCase());
+          if (hIn || aIn) continue;
+          ov = cand;
+          break;
+        }
+      }
       if (ov) {
         // Overlay a known R32 matchup — one or both sides may still be TBD
         const ownerFor = (name) => {
