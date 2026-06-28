@@ -18,13 +18,13 @@
   <meta name="apple-mobile-web-app-title" content="LBH Draft" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preload" href="assets/img/loading-bg-messi.png" as="image" />
-  <link rel="preload" href="assets/img/messi.svg" as="image" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=89" />
+  <link rel="preload" href="assets/img/rnd-32-background.svg" as="image" />
+  <link rel="preload" href="assets/img/rnd-32-players.svg" as="image" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=90" />
   <!-- Cache-bust: redirect to a versioned URL so stale cached pages reload once -->
   <script>
     (function () {
-      var V = '70';
+      var V = '71';
       try {
         if (localStorage.getItem('_lbhv') !== V) {
           localStorage.setItem('_lbhv', V);
@@ -39,9 +39,15 @@
 </head>
 <body data-route="ladder" data-theme="dark">
   <div id="splash">
+    <div class="splash-behind-wrap"><img class="splash-behind" src="assets/img/rnd-32-background.svg" alt="" /></div>
     <div class="splash-header">
-      <img src="assets/img/logo-splash.svg" class="splash-logo-img" alt="LBH Draft 2026" />
+      <img src="assets/img/rnd-32-logo.svg" class="splash-logo-img" alt="RND 32" />
     </div>
+    <div class="splash-bar-track">
+      <div class="splash-bar"></div>
+    </div>
+    <div class="splash-player-wrap"><img class="splash-player-img" src="assets/img/rnd-32-players.svg" alt="" /></div>
+  </div>
     <div class="splash-bar-track">
       <div class="splash-bar"></div>
     </div>
