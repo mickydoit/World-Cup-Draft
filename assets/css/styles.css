@@ -131,81 +131,71 @@ a:hover { text-decoration: underline; }
 /* ---- SPLASH / LOADING SCREEN ---- */
 #splash {
   position: fixed; inset: 0; z-index: 9999;
-  background: #328fff;
+  background: #1a0a3c;
   overflow: hidden;
   transition: opacity 0.6s ease;
 }
 #splash.splash-out { opacity: 0; pointer-events: none; }
-#splash::after {
-  content: '';
+.splash-behind-wrap {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: transparent;
   pointer-events: none;
+  overflow: hidden;
 }
-#splash::before {
-  content: '';
+.splash-behind {
   position: absolute;
-  inset: 0;
-  z-index: 0;
-  background: url('../img/loading-bg-messi.png') center/cover no-repeat;
+  top: -1%;
+  left: -7%;
+  width: 116%;
+  height: 103%;
+  object-fit: cover;
   opacity: 0;
-  animation: splash-img-in 0.5s ease-out forwards;
-  pointer-events: none;
+  animation: splash-img-in 0.5s ease-out 0.1s forwards;
 }
+.splash-behind.splash-reveal { opacity: 1; }
 .splash-header {
   position: absolute;
-  top: 13%;
+  top: 8%;
   left: 50%; transform: translateX(-50%);
   z-index: 3;
   opacity: 0;
-  animation: splash-img-in 0.4s ease-out 0.15s forwards;
+  animation: splash-img-in 0.4s ease-out 0.3s forwards;
 }
 .splash-logo-img {
-  height: 150px; width: auto;
+  width: 58vw;
+  max-width: 260px;
+  height: auto;
 }
 .splash-bar-track {
-  position: absolute; top: 24%;
+  position: absolute; top: 46%;
   left: 50%; transform: translateX(-50%);
   width: 176px; height: 8px;
   border-radius: 999px; overflow: hidden;
   z-index: 3;
   opacity: 0;
-  animation: splash-img-in 0.4s ease-out 0.2s forwards;
+  animation: splash-img-in 0.4s ease-out 0.4s forwards;
 }
 .splash-bar {
   height: 100%; border-radius: 999px;
-  background: linear-gradient(90deg, #111A7B, #FFFFFF);
+  background: linear-gradient(90deg, #f4ff7b, #510e93);
   transform: scaleX(0); transform-origin: left;
   animation: splash-load 4s cubic-bezier(.4,0,.2,1) forwards;
 }
 @keyframes splash-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-.splash-behind-wrap,
 .splash-player-wrap {
   position: absolute;
   bottom: 0;
-  left: 0; right: 0;
-  display: flex;
-  justify-content: center;
+  left: 50%; transform: translateX(-50%);
+  width: 101%;
+  max-width: 460px;
+  z-index: 2;
   pointer-events: none;
 }
-.splash-behind-wrap { z-index: 1; }
-.splash-player-wrap { z-index: 2; }
-.splash-behind {
-  width: 80vw;
-  height: auto;
-  opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-.splash-behind.splash-reveal {
-  opacity: 1;
-  transform: translateY(0);
-}
 .splash-player-img {
-  height: 63dvh;
-  width: auto;
+  width: 100%;
+  height: auto;
+  display: block;
   opacity: 0;
   transform: translateY(24px);
   transition: opacity 0.85s ease-out, transform 0.85s cubic-bezier(0.2, 0, 0, 1);
@@ -219,11 +209,12 @@ a:hover { text-decoration: underline; }
   to   { opacity: 1; }
 }
 @media (max-height: 700px) {
-  .splash-player-img { height: 55dvh; }
-  .splash-behind { width: 70vw; }
+  .splash-header { top: 6%; }
+  .splash-bar-track { top: 40%; }
 }
 @media (min-width: 768px) {
-  .splash-behind { height: 44dvh; width: auto; }
+  .splash-logo-img { width: 35vw; max-width: 300px; }
+  .splash-player-wrap { max-width: 520px; }
 }
 
 /* ---- TOPBAR ---- */
