@@ -20,11 +20,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" href="assets/img/rnd-32-background.svg" as="image" />
   <link rel="preload" href="assets/img/rnd-32-players.svg" as="image" />
-  <link rel="stylesheet" href="assets/css/styles.css?v=95" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=96" />
   <!-- Cache-bust: redirect to a versioned URL so stale cached pages reload once -->
   <script>
     (function () {
-      var V = '76';
+      var V = '77';
       try {
         if (localStorage.getItem('_lbhv') !== V) {
           localStorage.setItem('_lbhv', V);
@@ -56,16 +56,26 @@
       var p = document.querySelector('.splash-player-img');
       var b = document.querySelector('.splash-behind');
       if (!p) return;
-      var done = false;
-      function reveal() {
-        if (done) return; done = true;
-        if (b) b.classList.add('splash-reveal');
-        setTimeout(function () { p.classList.add('splash-reveal'); }, 140);
+      var t0 = Date.now();
+      var MIN_MS = 2400;
+      var playerDone = false;
+
+      // Background: reveal as soon as image loads (JS-driven, not CSS anim)
+      if (b) {
+        var showBg = function () { b.classList.add('splash-reveal'); };
+        if (b.decode) b.decode().catch(function(){}).then(showBg);
+        else { b.addEventListener('load', showBg); b.addEventListener('error', showBg); }
       }
-      setTimeout(reveal, 3500);
-      if (p.complete && p.naturalWidth) { reveal(); }
-      else if (p.decode) { p.decode().catch(function () {}).then(reveal); }
-      else { p.addEventListener('load', reveal); p.addEventListener('error', reveal); }
+
+      // Players: always async + enforce minimum splash duration
+      function revealPlayers() {
+        if (playerDone) return; playerDone = true;
+        var wait = Math.max(0, MIN_MS - (Date.now() - t0));
+        setTimeout(function () { p.classList.add('splash-reveal'); }, wait);
+      }
+      setTimeout(revealPlayers, 4500);
+      if (p.decode) p.decode().catch(function(){}).then(revealPlayers);
+      else { p.addEventListener('load', revealPlayers); p.addEventListener('error', revealPlayers); }
     })();
   </script>
 </body>
