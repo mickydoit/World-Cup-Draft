@@ -8,46 +8,64 @@
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
   <link rel="stylesheet" href="assets/css/styles.css?v=85" />
   <style>
-    /* ── Live clock (reuse from fixtures) ── */
+    /* ── Live clock ── */
     .live-dot{width:8px;height:8px;border-radius:50%;background:#e5564b;display:inline-block;flex:0 0 auto;animation:livepulse 1.2s ease-in-out infinite}
     .live-clock{display:inline-block;font-size:.72em;font-weight:700;color:#e5564b;background:rgba(229,86,75,.13);border:1px solid rgba(229,86,75,.3);border-radius:4px;padding:1px 6px;letter-spacing:.02em;min-width:2.2em;text-align:center;font-variant-numeric:tabular-nums}
     @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.15}}
 
-    /* ── Owner label inside bracket match slots ── */
+    /* ── Always use tab view, never the 9-col tree ── */
+    .bkt-page  { display:none   !important; }
+    .bkt-mobile{ display:block  !important; }
+
+    /* ── Bigger match cards ── */
+    .ko-info { min-width:0; }
+    .ko-side { padding:.65rem .75rem !important; }
+    .ko-side .ko-team  { font-size:.92rem !important; }
+    .ko-side .ko-score { font-size:1.05rem !important; min-width:1.5rem !important; }
+
+    /* ── Owner label (sits below team name inside ko-info) ── */
     .ko-owner{
-      display:block;font-size:.62em;opacity:.5;line-height:1.2;
-      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-      margin-top:1px;
+      display:block; font-size:.72em; opacity:.48; line-height:1.3;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+      margin-top:2px;
     }
 
     /* ── Live bar inside a ko-match ── */
     .ko-live-bar{
-      display:flex;align-items:center;gap:5px;
-      padding:2px 6px;font-size:.68em;color:#e5564b;
+      display:flex; align-items:center; gap:5px;
+      padding:3px 8px; font-size:.72em; color:#e5564b;
       border-bottom:1px solid rgba(229,86,75,.2);
       background:rgba(229,86,75,.06);
     }
-    .ko-match.ko-live{border-color:#e5564b}
+    .ko-match.ko-live { border-color:#e5564b; }
+    .ko-match.ko-live .ko-score { opacity:1; }
 
-    /* ── Show score for live matches too ── */
-    .ko-match.ko-live .ko-score{opacity:1}
+    /* ── On wider screens: show R32/R16 panels in a 2-col grid ── */
+    @media (min-width:680px) {
+      #bmp-r32, #bmp-r16 {
+        display:grid !important;
+        grid-template-columns:1fr 1fr;
+        gap:1rem;
+        align-items:start;
+      }
+    }
 
     /* ── Bracket section heading ── */
     .bracket-section-hdr{
-      display:flex;align-items:baseline;gap:.6rem;
-      margin:2rem 0 .5rem;
+      display:flex; align-items:baseline; gap:.6rem;
+      margin:2.5rem 0 .5rem;
     }
-    .bracket-section-hdr h2{margin:0}
-    .bracket-section-hint{font-size:.75em;opacity:.45}
+    .bracket-section-hdr h2 { margin:0; }
+    .bracket-section-hint { font-size:.75em; opacity:.45; }
 
     /* ── Test page label ── */
     .live-page-tag{
-      font-size:.5em;font-weight:700;
-      background:#f4a12a;color:#111;
-      border-radius:4px;padding:2px 7px;
-      margin-left:8px;letter-spacing:.06em;vertical-align:middle;
+      font-size:.5em; font-weight:700;
+      background:#f4a12a; color:#111;
+      border-radius:4px; padding:2px 7px;
+      margin-left:8px; letter-spacing:.06em; vertical-align:middle;
     }
-    .refresh-hint{font-size:.7em;opacity:.35;margin-top:0;margin-bottom:1.2rem}
+    .refresh-hint { font-size:.7em; opacity:.35; margin-top:0; margin-bottom:1.2rem; }
   </style>
   <script src="config.js"></script>
 </head>
@@ -453,8 +471,10 @@
     function koSide(name, owner, score, isWinner, showScore, tbd, confirmed) {
       return `
         <div class="ko-side ${isWinner?'win':''} ${tbd?'tbd':''} ${confirmed&&!showScore?'confirmed-q':''}">
-          <span class="ko-team">${tbd?'TBD':esc(name||'TBD')}</span>
-          ${(!tbd&&owner)?`<span class="ko-owner">${esc(owner)}</span>`:''}
+          <div class="ko-info">
+            <span class="ko-team">${tbd?'TBD':esc(name||'TBD')}</span>
+            ${(!tbd&&owner)?`<span class="ko-owner">${esc(owner)}</span>`:''}
+          </div>
           <span class="ko-score">${showScore&&score!=null?score:''}</span>
         </div>`;
     }
