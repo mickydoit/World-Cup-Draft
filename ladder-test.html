@@ -455,8 +455,7 @@
 
     function renderLadder(ladder) {
       return `
-      <h1>Ladder <span class="live-page-tag">TEST</span></h1>
-      <p class="hint refresh-hint">Last updated: <span id="refresh-ts">—</span> · <a href="./#/" style="opacity:.5">← Main app</a></p>
+      <h2 style="margin-top:2.5rem">Ladder</h2>
       <div class="ladder-header">
         <span class="lh-rank">#</span><span class="lh-move"></span>
         <span class="lh-avatar"></span><span class="lh-name">Player</span>
@@ -683,14 +682,12 @@
       cachedBracket  = buildBracket(data, r32Overlay);
 
       app.innerHTML =
-        renderLadder(ladder)
-        + (!allGroupsDone ? renderGroupStandings(groups) : '')
-        + `<div class="bracket-section-hdr">
-             <h2>Knockout Bracket</h2>
-             <span class="bracket-section-hint">Owner shown under each team · scores &amp; clocks update every 30 s</span>
-           </div>
-           <p class="hint" style="margin-bottom:.5rem">Advancing team highlighted. Points: R32=1, R16=2, QF=3, SF=4, Final=5.</p>`
-        + renderBracket(cachedBracket, clocks);
+        `<h1>Knockout Bracket <span class="live-page-tag">TEST</span></h1>
+         <p class="hint refresh-hint">Last updated: <span id="refresh-ts">—</span> · Owner shown under each team · scores &amp; clocks refresh every 30 s · <a href="./#/" style="opacity:.5">← Main app</a></p>
+         <p class="hint" style="margin-bottom:.5rem">Advancing team highlighted. Points: R32=1, R16=2, QF=3, SF=4, Final=5.</p>`
+        + renderBracket(cachedBracket, clocks)
+        + renderLadder(ladder)
+        + (!allGroupsDone ? renderGroupStandings(groups) : '');
 
       updateTs();
     }
