@@ -163,8 +163,8 @@ a:hover { text-decoration: underline; }
   animation: splash-img-in 0.4s ease-out 0.3s forwards;
 }
 .splash-logo-img {
-  width: 58vw;
-  max-width: 260px;
+  width: 80vw;
+  max-width: 360px;
   height: auto;
 }
 .splash-bar-track {
@@ -185,7 +185,7 @@ a:hover { text-decoration: underline; }
 @keyframes splash-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .splash-player-wrap {
   position: absolute;
-  bottom: 0;
+  bottom: -6%;
   left: 50%; transform: translateX(-50%);
   width: 101%;
   max-width: 460px;
@@ -213,8 +213,8 @@ a:hover { text-decoration: underline; }
   .splash-bar-track { top: 40%; }
 }
 @media (min-width: 768px) {
-  .splash-logo-img { width: 35vw; max-width: 300px; }
-  .splash-player-wrap { max-width: 520px; }
+  .splash-logo-img { width: 40vw; max-width: 320px; }
+  .splash-player-wrap { max-width: 520px; bottom: -6%; }
 }
 
 /* ---- TOPBAR ---- */
