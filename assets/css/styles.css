@@ -1419,3 +1419,9 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
 .mirror-half{flex:1;min-width:0}
 .mirror-divider{flex:0 0 2px;background:var(--border);align-self:stretch;margin:0 10px}
 .qkf-tree{display:flex;align-items:stretch;min-height:220px;padding:.5rem 0}
+
+/* ---- Bracket card uniform height (TBD slots match real team cards) ---- */
+.bkt-ladder .ko-side { min-height:2.8rem; }
+.bkt-ladder .ko-match { min-width:0; }
+.mirror-bracket { align-items:stretch; }
+.mirror-half { display:flex; flex-direction:column; }
