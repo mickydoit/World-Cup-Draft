@@ -165,7 +165,17 @@ const fxSort = (a, b) => {
 export function getFixturesView(data) {
   const teamById = byId(data.teams);
   const owners = ownerNames(data);
-  const fixtures = [...data.fixtures].sort(fxSort).map((f) => decorateFixture(f, teamById, owners));
+  // Suppress null-team R32 placeholder rows when a real fixture exists at the same kickoff.
+  // The sync-bracket job inserts real fixtures alongside the original placeholders.
+  const r32RealKickoffs = new Set(
+    data.fixtures
+      .filter(f => f.stage === 'R32' && (f.home_team_id != null || f.away_team_id != null) && f.kickoff)
+      .map(f => f.kickoff)
+  );
+  const fixtures = [...data.fixtures]
+    .filter(f => !(f.stage === 'R32' && f.home_team_id == null && f.away_team_id == null && r32RealKickoffs.has(f.kickoff)))
+    .sort(fxSort)
+    .map((f) => decorateFixture(f, teamById, owners));
   const groups = {};
   for (const f of fixtures) (groups[f.date_label] ||= []).push(f);
   return Object.entries(groups).map(([title, items]) => ({
