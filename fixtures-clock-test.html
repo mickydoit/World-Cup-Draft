@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111111" />
+  <title>Fixtures · Live Clock Test</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=85" />
+  <style>
+    .fixture-card.live { border-color: #e5564b; }
+    .fxday-badge.live-badge { color: #e5564b; }
+
+    .fxc-time-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      line-height: 1;
+    }
+
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #e5564b; flex: 0 0 auto;
+      animation: livepulse 1.2s ease-in-out infinite;
+    }
+
+    /* Live clock badge — shows "45'" / "HT" / "67'+2'" next to the red dot */
+    .live-clock {
+      display: inline-block;
+      font-size: 0.72em;
+      font-weight: 700;
+      color: #e5564b;
+      background: rgba(229, 86, 75, 0.13);
+      border: 1px solid rgba(229, 86, 75, 0.3);
+      border-radius: 4px;
+      padding: 1px 6px;
+      letter-spacing: 0.02em;
+      min-width: 2.2em;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .live-page-tag {
+      font-size: 0.5em; font-weight: 700;
+      background: #f4a12a; color: #111;
+      border-radius: 4px; padding: 2px 7px;
+      margin-left: 8px; letter-spacing: 0.06em;
+      vertical-align: middle;
+    }
+
+    .refresh-hint {
+      font-size: 0.7em;
+      opacity: 0.4;
+      margin-top: 0;
+      margin-bottom: 1.2rem;
+    }
+
+    @keyframes livepulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
+  </style>
+  <script src="config.js"></script>
+</head>
+<body data-route="fixtures" data-theme="dark">
+
+  <header class="topbar">
+    <a class="brand" href="./">
+      <img class="brand-logo-img" src="assets/img/logo-black.svg" alt="LBH Draft" width="80" height="36" />
+    </a>
+    <nav class="topbar-nav">
+      <a href="./">Ladder</a>
+      <a href="./#/fixtures">Fixtures</a>
+      <a href="./#/draft">Teams</a>
+      <a href="./#/bracket">Bracket</a>
+    </nav>
+  </header>
+
+  <main class="container" id="app">
+    <p class="hint">Loading…</p>
+  </main>
+
+  <script type="module">
+    // ── Secret key gate ─────────────────────────────────────────────────────
+    const SECRET_KEY = 'micky2026';
+    if (new URLSearchParams(location.search).get('key') !== SECRET_KEY) {
+      document.getElementById('app').innerHTML =
+        '<p class="hint" style="color:#e5564b;margin-top:3rem;text-align:center">Page not found.</p>';
+      document.title = '404';
+      throw new Error('key mismatch');
+    }
+
+    // ── Config ───────────────────────────────────────────────────────────────
+    const cfg = window.LBH_CONFIG || {};
+    const SB_URL  = (cfg.SUPABASE_URL  || '').replace(/\/+$/, '');
+    const SB_KEY  = cfg.SUPABASE_ANON_KEY || '';
+    const REST    = `${SB_URL}/rest/v1`;
+    const ESPN    = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+
+    const DISPLAY_TZ  = 'Australia/Sydney';
+    const DATE_FMT    = new Intl.DateTimeFormat('en-AU', { weekday: 'short', day: 'numeric', month: 'short', timeZone: DISPLAY_TZ });
+    const TIME_FMT    = new Intl.DateTimeFormat('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: DISPLAY_TZ });
+    const STAGE_LABEL = { R32: 'Round of 32', R16: 'Round of 16', QF: 'Quarter-final', SF: 'Semi-final', third: '3rd place', final: 'Final' };
+
+    // ESPN display names → canonical DB names (mirrors src/api/espn.js)
+    const ESPN_NAME_MAP = {
+      'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
+      'Bosnia & Herzegovina': 'Bosnia and Herzegovina',
+      'Czechia': 'Czech Republic',
+      'Congo DR': 'DR Congo',
+      'DRC': 'DR Congo',
+      'Türkiye': 'Turkey',
+      'Korea Republic': 'South Korea',
+      "Côte d'Ivoire": 'Ivory Coast',
+      "Cote d'Ivoire": 'Ivory Coast',
+    };
+    const normName = n => ESPN_NAME_MAP[n] || n;
+
+    const esc = v => String(v == null ? '' : v)
+      .replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+    // ── Supabase helpers ─────────────────────────────────────────────────────
+    async function sbGet(table, qs = 'select=*') {
+      const r = await fetch(`${REST}/${table}?${qs}`, {
+        headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+      });
+      if (!r.ok) throw new Error(`Supabase ${r.status}`);
+      return r.json();
+    }
+
+    async function loadAll() {
+      const [fixtures, teams, picks, players] = await Promise.all([
+        sbGet('fixtures', 'select=*&order=kickoff.asc.nullslast,id.asc'),
+        sbGet('teams',    'select=id,name,code'),
+        sbGet('picks',    'select=team_id,player_id'),
+        sbGet('players',  'select=id,name'),
+      ]);
+      return { fixtures, teams, picks, players };
+    }
+
+    async function loadScores() {
+      return sbGet('fixtures', 'select=id,status,home_score,away_score,winner_team_id');
+    }
+
+    // ── ESPN live clock ──────────────────────────────────────────────────────
+    // Returns a map of "HomeName|AwayName" → { state, clock }
+    // state: 'pre' | 'in' | 'post'
+    // clock: e.g. "45'" | "HT" | "67'+2'" | "ET" | "Pen" (from ESPN shortDetail)
+    async function loadEspnClocks() {
+      const clocks = {};
+      const now = new Date();
+      // Fetch yesterday + today + tomorrow to catch late night / early morning games
+      const dates = [-1, 0, 1].map(offset => {
+        const d = new Date(now);
+        d.setUTCDate(d.getUTCDate() + offset);
+        return d.toISOString().slice(0, 10).replace(/-/g, '');
+      });
+
+      for (const date of dates) {
+        try {
+          const res = await fetch(`${ESPN}?dates=${date}`);
+          if (!res.ok) continue;
+          const data = await res.json();
+          for (const event of data.events || []) {
+            const comp   = event.competitions?.[0];
+            const status = comp?.status ?? {};
+            const stype  = status.type ?? {};
+            const home   = comp?.competitors?.find(c => c.homeAway === 'home');
+            const away   = comp?.competitors?.find(c => c.homeAway === 'away');
+            if (!home || !away) continue;
+
+            const homeName = normName(home.team?.displayName || '');
+            const awayName = normName(away.team?.displayName || '');
+            if (!homeName || !awayName) continue;
+
+            // shortDetail gives the human-readable clock: "45'", "HT", "67'+2'", etc.
+            // For pre-game it's "Scheduled"; for finished it's "FT" or similar.
+            const rawClock = stype.shortDetail || '';
+            const state    = stype.state || 'pre';
+
+            // Only store entries that are currently in progress or very recently finished
+            clocks[`${homeName}|${awayName}`] = { state, clock: rawClock };
+          }
+        } catch {
+          // Ignore individual date failures — return whatever we got
+        }
+      }
+      return clocks;
+    }
+
+    // ── Build fixture groups ─────────────────────────────────────────────────
+    function buildGroups({ fixtures, teams, picks, players }) {
+      const teamById   = Object.fromEntries(teams.map(t => [t.id, t]));
+      const playerById = Object.fromEntries(players.map(p => [p.id, p]));
+      const ownerByTeam = {};
+      for (const p of picks) {
+        const pl = playerById[p.player_id];
+        if (pl) ownerByTeam[p.team_id] = pl.name;
+      }
+
+      const sorted = [...fixtures].sort((a, b) => {
+        const ka = a.kickoff ? Date.parse(a.kickoff) : Infinity;
+        const kb = b.kickoff ? Date.parse(b.kickoff) : Infinity;
+        return ka - kb || a.id - b.id;
+      });
+
+      const decorated = sorted.map(f => {
+        const d    = f.kickoff ? new Date(f.kickoff) : null;
+        const home = teamById[f.home_team_id] || {};
+        const away = teamById[f.away_team_id] || {};
+        return {
+          ...f,
+          home_name:     home.name  || 'TBD',
+          away_name:     away.name  || 'TBD',
+          home_owner:    ownerByTeam[f.home_team_id] || null,
+          away_owner:    ownerByTeam[f.away_team_id] || null,
+          home_is_winner: f.winner_team_id != null && f.winner_team_id === f.home_team_id,
+          away_is_winner: f.winner_team_id != null && f.winner_team_id === f.away_team_id,
+          time_label:    d ? TIME_FMT.format(d) : '',
+          date_label:    d ? DATE_FMT.format(d) : 'Date TBC',
+          date_ts:       d ? d.getTime() : null,
+          stage_label:   f.stage === 'group' ? `Group ${f.grp}` : (STAGE_LABEL[f.stage] || f.stage),
+          // lookup key for ESPN clock map
+          espn_key:      `${home.name || ''}|${away.name || ''}`,
+        };
+      });
+
+      const groupMap = {};
+      for (const f of decorated) (groupMap[f.date_label] ||= []).push(f);
+      return Object.entries(groupMap).map(([title, items]) => ({
+        title,
+        fixtures:   items,
+        allPlayed:  items.every(f => f.status === 'finished'),
+        date_ts:    items[0]?.date_ts || null,
+      }));
+    }
+
+    // ── Render a single fixture card ─────────────────────────────────────────
+    function renderCard(f, clocks = {}) {
+      const isLive     = f.status === 'live';
+      const isFinished = f.status === 'finished';
+      const scored     = (isLive || isFinished) && f.home_score != null && f.away_score != null;
+      const isDraw     = isFinished && scored && f.winner_team_id == null;
+      const sep        = scored ? `${f.home_score}&ndash;${f.away_score}` : 'v';
+
+      // Live clock from ESPN
+      const espn    = clocks[f.espn_key] || null;
+      const liveDot = isLive ? `<span class="live-dot"></span>` : '';
+      const clockBadge = (isLive && espn?.state === 'in' && espn?.clock)
+        ? `<span class="live-clock">${esc(espn.clock)}</span>`
+        : '';
+
+      return `
+      <div id="fx-${f.id}" class="fixture-card${isFinished ? ' played' : isLive ? ' live' : ''}"
+           data-espn-key="${esc(f.espn_key)}">
+        <div class="fxc-top">
+          <span class="fxc-time-row">
+            <span class="fxc-time">${esc(f.time_label || 'TBC')}</span>
+            ${liveDot}${clockBadge}
+          </span>
+          <span class="fxc-group">${esc(f.stage_label || '')}</span>
+        </div>
+        <div class="fxc-match">
+          <span class="fxc-team">${esc(f.home_name)}</span>
+          <span class="fxc-sep">${sep}</span>
+          <span class="fxc-team">${esc(f.away_name)}</span>
+        </div>
+        <div class="fxc-owners">
+          <span class="fxc-owner ${f.home_is_winner ? 'winner' : isDraw ? 'draw' : ''} ${!f.home_owner ? 'dim' : ''}">
+            ${esc(f.home_owner || '—')}
+          </span>
+          <span class="fxc-vs">vs</span>
+          <span class="fxc-owner ${f.away_is_winner ? 'winner' : isDraw ? 'draw' : ''} ${!f.away_owner ? 'dim' : ''}">
+            ${esc(f.away_owner || '—')}
+          </span>
+        </div>
+      </div>`;
+    }
+
+    // ── Render day groups ────────────────────────────────────────────────────
+    function pickActiveTitle(groups) {
+      const now = Date.now();
+      let active = null;
+      for (const g of groups) {
+        const hasStarted  = g.date_ts != null && g.date_ts <= now + 2 * 3600 * 1000;
+        const hasAnyPlayed = g.fixtures.some(f => f.status === 'finished');
+        if ((hasStarted || hasAnyPlayed) && !g.allPlayed) active = g.title;
+      }
+      if (!active) {
+        const next = groups.find(g => !g.allPlayed && g.date_ts != null && g.date_ts > now);
+        active = next?.title ?? groups.find(g => !g.allPlayed)?.title ?? null;
+      }
+      return active;
+    }
+
+    function badge(g) {
+      const played = g.fixtures.filter(f => f.status === 'finished').length;
+      const live   = g.fixtures.filter(f => f.status === 'live').length;
+      const total  = g.fixtures.length;
+      if (g.allPlayed)  return `<span class="fxday-badge done">All played</span>`;
+      if (live > 0)     return `<span class="fxday-badge live-badge">${live} LIVE</span>`;
+      if (played > 0)   return `<span class="fxday-badge">${played}/${total} played</span>`;
+      return `<span class="fxday-badge">${total} match${total !== 1 ? 'es' : ''}</span>`;
+    }
+
+    function renderGroups(groups, clocks) {
+      const activeTitle = pickActiveTitle(groups);
+      return groups.map(g => `
+        <details class="fxday${g.allPlayed ? ' done' : ''}" data-group="${esc(g.title)}"
+                 ${g.title === activeTitle ? 'open' : ''}>
+          <summary class="fxday-header">
+            <span class="fxday-title">${esc(g.title)}</span>
+            ${badge(g)}
+          </summary>
+          <div class="fxday-body">${g.fixtures.map(f => renderCard(f, clocks)).join('')}</div>
+        </details>`).join('');
+    }
+
+    // ── Incremental score + clock update (no full re-render) ─────────────────
+    function applyScores(scores, clocks) {
+      for (const s of scores) {
+        const el = document.getElementById('fx-' + s.id);
+        if (!el) continue;
+
+        const isLive     = s.status === 'live';
+        const isFinished = s.status === 'finished';
+        const scored     = (isLive || isFinished) && s.home_score != null && s.away_score != null;
+        const isDraw     = isFinished && scored && s.winner_team_id == null;
+
+        // Score separator
+        const sep = el.querySelector('.fxc-sep');
+        if (sep) sep.innerHTML = scored ? `${s.home_score}&ndash;${s.away_score}` : 'v';
+
+        // Card classes
+        el.classList.toggle('played', isFinished);
+        el.classList.toggle('live',   isLive);
+
+        // Owner winner/draw classes
+        const [homeOwner, , awayOwner] = el.querySelectorAll('.fxc-owner');
+        if (isFinished && scored) {
+          homeOwner?.classList.toggle('winner', s.winner_team_id != null && s.winner_team_id === s.home_team_id);
+          homeOwner?.classList.toggle('draw',   isDraw);
+          awayOwner?.classList.toggle('winner', s.winner_team_id != null && s.winner_team_id === s.away_team_id);
+          awayOwner?.classList.toggle('draw',   isDraw);
+        }
+
+        // Live dot + clock badge
+        const timeRow = el.querySelector('.fxc-time-row');
+        if (timeRow) {
+          // Red dot
+          let dot = timeRow.querySelector('.live-dot');
+          if (isLive && !dot) {
+            dot = Object.assign(document.createElement('span'), { className: 'live-dot' });
+            timeRow.appendChild(dot);
+          } else if (!isLive && dot) {
+            dot.remove();
+          }
+
+          // Clock badge
+          const espnKey = el.dataset.espnKey;
+          const espn    = espnKey ? (clocks[espnKey] || null) : null;
+          let clockEl   = timeRow.querySelector('.live-clock');
+          if (isLive && espn?.state === 'in' && espn?.clock) {
+            if (!clockEl) {
+              clockEl = Object.assign(document.createElement('span'), { className: 'live-clock' });
+              timeRow.appendChild(clockEl);
+            }
+            clockEl.textContent = espn.clock;
+          } else if (clockEl) {
+            clockEl.remove();
+          }
+        }
+      }
+
+      // Refresh day-group badges
+      document.querySelectorAll('.fxday').forEach(day => {
+        const cards  = day.querySelectorAll('.fixture-card');
+        const total  = cards.length;
+        if (!total) return;
+        const played = day.querySelectorAll('.fixture-card.played').length;
+        const live   = day.querySelectorAll('.fixture-card.live').length;
+        const all    = played === total;
+        day.classList.toggle('done', all);
+        const bdg = day.querySelector('.fxday-badge');
+        if (!bdg) return;
+        if (all)      { bdg.className = 'fxday-badge done';       bdg.textContent = 'All played'; }
+        else if (live){ bdg.className = 'fxday-badge live-badge'; bdg.textContent = `${live} LIVE`; }
+        else if (played) { bdg.className = 'fxday-badge';         bdg.textContent = `${played}/${total} played`; }
+      });
+    }
+
+    // ── Timestamp display ────────────────────────────────────────────────────
+    function updateTimestamp() {
+      const el = document.getElementById('refresh-ts');
+      if (el) el.textContent = new Date().toLocaleTimeString('en-AU', {
+        timeZone: DISPLAY_TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      }) + ' AEST';
+    }
+
+    // ── Init + polling loop ──────────────────────────────────────────────────
+    const app = document.getElementById('app');
+
+    async function init() {
+      const [data, clocks] = await Promise.all([loadAll(), loadEspnClocks()]);
+      const groups = buildGroups(data);
+      app.innerHTML = `
+        <h1>Fixtures <span class="live-page-tag">TEST</span></h1>
+        <p class="hint">Scores and live clock update every 30 s · Times in AEST ·
+          <a href="./#/fixtures" style="opacity:.5">← Back to main app</a></p>
+        <p class="hint refresh-hint">Last updated: <span id="refresh-ts">—</span></p>
+        ${renderGroups(groups, clocks)}
+        <div class="view-btn-wrap"><a class="view-btn" href="./#/">View Ladder</a></div>`;
+      updateTimestamp();
+    }
+
+    async function poll() {
+      try {
+        const [scores, clocks] = await Promise.all([loadScores(), loadEspnClocks()]);
+        applyScores(scores, clocks);
+        updateTimestamp();
+      } catch {
+        // Stay silent — stale data is preferable to an error message
+      }
+    }
+
+    try {
+      await init();
+    } catch (err) {
+      app.innerHTML = `<p class="hint" style="color:#e5564b">Failed to load: ${esc(err.message)}</p>`;
+    }
+
+    setInterval(poll, 30000);
+  </script>
+
+</body>
+</html>
