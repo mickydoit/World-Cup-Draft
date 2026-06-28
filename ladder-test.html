@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111111" />
+  <title>Ladder · Test</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=85" />
+  <style>
+    /* ── Live clock (reuse from fixtures) ── */
+    .live-dot{width:8px;height:8px;border-radius:50%;background:#e5564b;display:inline-block;flex:0 0 auto;animation:livepulse 1.2s ease-in-out infinite}
+    .live-clock{display:inline-block;font-size:.72em;font-weight:700;color:#e5564b;background:rgba(229,86,75,.13);border:1px solid rgba(229,86,75,.3);border-radius:4px;padding:1px 6px;letter-spacing:.02em;min-width:2.2em;text-align:center;font-variant-numeric:tabular-nums}
+    @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.15}}
+
+    /* ── Owner label inside bracket match slots ── */
+    .ko-owner{
+      display:block;font-size:.62em;opacity:.5;line-height:1.2;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      margin-top:1px;
+    }
+
+    /* ── Live bar inside a ko-match ── */
+    .ko-live-bar{
+      display:flex;align-items:center;gap:5px;
+      padding:2px 6px;font-size:.68em;color:#e5564b;
+      border-bottom:1px solid rgba(229,86,75,.2);
+      background:rgba(229,86,75,.06);
+    }
+    .ko-match.ko-live{border-color:#e5564b}
+
+    /* ── Show score for live matches too ── */
+    .ko-match.ko-live .ko-score{opacity:1}
+
+    /* ── Bracket section heading ── */
+    .bracket-section-hdr{
+      display:flex;align-items:baseline;gap:.6rem;
+      margin:2rem 0 .5rem;
+    }
+    .bracket-section-hdr h2{margin:0}
+    .bracket-section-hint{font-size:.75em;opacity:.45}
+
+    /* ── Test page label ── */
+    .live-page-tag{
+      font-size:.5em;font-weight:700;
+      background:#f4a12a;color:#111;
+      border-radius:4px;padding:2px 7px;
+      margin-left:8px;letter-spacing:.06em;vertical-align:middle;
+    }
+    .refresh-hint{font-size:.7em;opacity:.35;margin-top:0;margin-bottom:1.2rem}
+  </style>
+  <script src="config.js"></script>
+</head>
+<body data-route="ladder" data-theme="dark">
+
+  <header class="topbar">
+    <a class="brand" href="./">
+      <img class="brand-logo-img" src="assets/img/logo-black.svg" alt="LBH Draft" width="80" height="36" />
+    </a>
+    <nav class="topbar-nav">
+      <a href="./">Ladder</a>
+      <a href="./#/fixtures">Fixtures</a>
+      <a href="./#/draft">Teams</a>
+      <a href="./#/bracket">Bracket</a>
+    </nav>
+  </header>
+
+  <main class="container" id="app">
+    <p class="hint">Loading…</p>
+  </main>
+
+  <script type="module">
+    // ── Secret key ───────────────────────────────────────────────────────────
+    if (new URLSearchParams(location.search).get('key') !== 'micky2026') {
+      document.getElementById('app').innerHTML =
+        '<p class="hint" style="color:#e5564b;margin-top:3rem;text-align:center">Page not found.</p>';
+      throw new Error('key mismatch');
+    }
+
+    // ── Supabase + ESPN config ───────────────────────────────────────────────
+    const cfg     = window.LBH_CONFIG || {};
+    const SB_URL  = (cfg.SUPABASE_URL || '').replace(/\/+$/, '');
+    const SB_KEY  = cfg.SUPABASE_ANON_KEY || '';
+    const REST    = `${SB_URL}/rest/v1`;
+    const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=';
+    const ESPN_ST = 'https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026';
+
+    const DISPLAY_TZ  = 'Australia/Sydney';
+    const DATE_FMT    = new Intl.DateTimeFormat('en-AU', { weekday:'short', day:'numeric', month:'short', timeZone: DISPLAY_TZ });
+    const TIME_FMT    = new Intl.DateTimeFormat('en-AU', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone: DISPLAY_TZ });
+    const KO_STAGES   = ['R32','R16','QF','SF','third','final'];
+    const STAGE_LABEL = { R32:'Round of 32', R16:'Round of 16', QF:'Quarter-final', SF:'Semi-final', third:'3rd place', final:'Final' };
+    const KO_ROUNDS   = [
+      { stage:'R32',   label:'Round of 32',    expected:16, pts:1 },
+      { stage:'R16',   label:'Round of 16',    expected:8,  pts:2 },
+      { stage:'QF',    label:'Quarter-finals', expected:4,  pts:3 },
+      { stage:'SF',    label:'Semi-finals',    expected:2,  pts:4 },
+      { stage:'final', label:'Final',          expected:1,  pts:5 },
+    ];
+    const ESPN_NAME_MAP = {
+      'Bosnia-Herzegovina':'Bosnia and Herzegovina','Bosnia & Herzegovina':'Bosnia and Herzegovina',
+      'Czechia':'Czech Republic','Congo DR':'DR Congo','DRC':'DR Congo',
+      'Türkiye':'Turkey','Korea Republic':'South Korea',
+      "Côte d'Ivoire":'Ivory Coast',"Cote d'Ivoire":'Ivory Coast',
+    };
+    const normName = n => ESPN_NAME_MAP[n] || n;
+    const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const byId = rows => Object.fromEntries(rows.map(r => [r.id, r]));
+
+    // ── Supabase helpers ─────────────────────────────────────────────────────
+    async function sbGet(table, qs='select=*') {
+      const r = await fetch(`${REST}/${table}?${qs}`, {
+        headers: { apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}` },
+      });
+      if (!r.ok) throw new Error(`Supabase ${r.status}`);
+      return r.json();
+    }
+
+    async function loadAll() {
+      const [fixtures, teams, picks, players, settings] = await Promise.all([
+        sbGet('fixtures', 'select=*'),
+        sbGet('teams',    'select=id,name,code,grp,ranking'),
+        sbGet('picks',    'select=team_id,player_id'),
+        sbGet('players',  'select=id,name'),
+        sbGet('settings', 'select=*&limit=1'),
+      ]);
+      return { fixtures, teams, picks, players, settings: settings[0] || {} };
+    }
+
+    async function loadScores() {
+      return sbGet('fixtures', 'select=id,status,home_score,away_score,winner_team_id');
+    }
+
+    // ── ESPN helpers ─────────────────────────────────────────────────────────
+    async function loadEspnClocks() {
+      const clocks = {};
+      const now = new Date();
+      const dates = [-1,0,1].map(off => {
+        const d = new Date(now); d.setUTCDate(d.getUTCDate() + off);
+        return d.toISOString().slice(0,10).replace(/-/g,'');
+      });
+      for (const date of dates) {
+        try {
+          const res = await fetch(ESPN_SB + date);
+          if (!res.ok) continue;
+          const json = await res.json();
+          for (const event of json.events||[]) {
+            const comp  = event.competitions?.[0];
+            const stype = comp?.status?.type ?? {};
+            const home  = comp?.competitors?.find(c=>c.homeAway==='home');
+            const away  = comp?.competitors?.find(c=>c.homeAway==='away');
+            if (!home||!away) continue;
+            const h = normName(home.team?.displayName||'');
+            const a = normName(away.team?.displayName||'');
+            if (h&&a) clocks[`${h}|${a}`] = { state:stype.state||'pre', clock:stype.shortDetail||'' };
+          }
+        } catch {}
+      }
+      return clocks;
+    }
+
+    async function loadEspnStandings() {
+      try {
+        const r = await fetch(ESPN_ST);
+        return r.ok ? r.json() : null;
+      } catch { return null; }
+    }
+
+    // ── Group positions (for R32 overlay) ───────────────────────────────────
+    function getGroupPositions(standings) {
+      const positions = {};
+      for (const group of (standings?.children||[])) {
+        const entries = group.standings?.entries||[];
+        const groupComplete = entries.length>0 && entries.every(e=>{
+          const gp = e.stats?.find(s=>s.name==='gamesPlayed')?.value??0;
+          return gp>=3;
+        });
+        const qualified = entries
+          .filter(e=>{
+            if (e.note?.description!=='Advance to Round of 32') return false;
+            const pts = e.stats?.find(s=>s.name==='points')?.value??0;
+            const gp  = e.stats?.find(s=>s.name==='gamesPlayed')?.value??0;
+            return groupComplete||(gp>=2&&pts>=6);
+          })
+          .map(e=>({
+            name: normName(e.team?.displayName||''),
+            pts:  e.stats?.find(s=>s.name==='points')?.value??0,
+            gd:   e.stats?.find(s=>s.name==='pointDifferential')?.value??0,
+            gf:   e.stats?.find(s=>s.name==='pointsFor')?.value??0,
+          }))
+          .sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);
+        if (qualified.length>=1)
+          positions[group.name] = { winner:qualified[0].name, runnerUp:qualified[1]?.name||null };
+      }
+      return positions;
+    }
+
+    function resolveEspnSlot(displayName, groupPositions) {
+      if (!displayName) return null;
+      if (!displayName.includes('Place')&&!displayName.includes('Winner'))
+        return normName(displayName);
+      const wm = displayName.match(/^Group ([A-L]) Winner$/i);
+      if (wm) return groupPositions[`Group ${wm[1]}`]?.winner||null;
+      const rm = displayName.match(/^Group ([A-L]) 2nd Place$/i);
+      if (rm) return groupPositions[`Group ${rm[1]}`]?.runnerUp||null;
+      return null;
+    }
+
+    async function buildR32Overlay(standingsJson) {
+      const groupPositions = getGroupPositions(standingsJson);
+      const overlay = [];
+      const now = new Date();
+      const r32Dates = [0,1,2,3,4,5,6].map(off=>{
+        const d = new Date(now); d.setUTCDate(d.getUTCDate()+off);
+        return d.toISOString().slice(0,10).replace(/-/g,'');
+      });
+      const seen = new Set();
+      for (const date of r32Dates) {
+        try {
+          const res = await fetch(ESPN_SB+date);
+          if (!res.ok) continue;
+          const data = await res.json();
+          for (const event of data.events||[]) {
+            if (event.season?.slug!=='round-of-32'||seen.has(event.id)) continue;
+            seen.add(event.id);
+            const comp = event.competitions?.[0];
+            const home = comp?.competitors?.find(c=>c.homeAway==='home');
+            const away = comp?.competitors?.find(c=>c.homeAway==='away');
+            if (!home||!away) continue;
+            const homeName = resolveEspnSlot(home.team?.displayName||'', groupPositions);
+            const awayName = resolveEspnSlot(away.team?.displayName||'', groupPositions);
+            overlay.push({ home:homeName, away:awayName });
+          }
+        } catch {}
+      }
+      return overlay;
+    }
+
+    // ── Compute ladder ───────────────────────────────────────────────────────
+    function computeLadder(data) {
+      const ownership = Object.fromEntries(data.picks.map(p=>[p.team_id, p.player_id]));
+      const stagePoints = { group:1, R32:1, R16:2, QF:3, SF:4, third:data.settings.score_third_place?1:0, final:5 };
+      const totals = {};
+      for (const f of data.fixtures) {
+        if (f.status!=='finished') continue;
+        const homeOwner = ownership[f.home_team_id];
+        const awayOwner = ownership[f.away_team_id];
+        const pts = stagePoints[f.stage]??0;
+        const isGroup = f.stage==='group';
+        const drawn = isGroup && f.home_score===f.away_score;
+        if (homeOwner!=null&&homeOwner===awayOwner) {
+          totals[homeOwner]=(totals[homeOwner]||0)+(drawn?.5:pts);
+        } else if (drawn) {
+          if (homeOwner!=null) totals[homeOwner]=(totals[homeOwner]||0)+.5;
+          if (awayOwner!=null) totals[awayOwner]=(totals[awayOwner]||0)+.5;
+        } else {
+          const winner = isGroup
+            ? (f.home_score>f.away_score?f.home_team_id:f.away_team_id)
+            : f.winner_team_id;
+          const winOwner = ownership[winner];
+          if (winOwner!=null) totals[winOwner]=(totals[winOwner]||0)+pts;
+        }
+      }
+
+      const ko = data.fixtures.filter(f=>KO_STAGES.includes(f.stage));
+      const qualified = new Set();
+      for (const f of ko) {
+        if (f.home_team_id!=null) qualified.add(f.home_team_id);
+        if (f.away_team_id!=null) qualified.add(f.away_team_id);
+      }
+      const bracketDrawn = qualified.size>0;
+      const eliminated = new Set();
+      for (const f of ko) {
+        if (f.status!=='finished'||f.winner_team_id==null) continue;
+        const loser = f.winner_team_id===f.home_team_id?f.away_team_id:f.home_team_id;
+        if (loser!=null) eliminated.add(loser);
+      }
+      const alive = tid => !eliminated.has(tid)&&(!bracketDrawn||qualified.has(tid));
+      const teamCounts = {};
+      for (const p of data.picks) {
+        if (alive(p.team_id)) teamCounts[p.player_id]=(teamCounts[p.player_id]||0)+1;
+      }
+
+      const finDates = [...new Set(
+        data.fixtures.filter(f=>f.status==='finished'&&f.kickoff).map(f=>f.kickoff.slice(0,10))
+      )].sort();
+      let prevRankById = null;
+      if (finDates.length>=2) {
+        const lastDate = finDates[finDates.length-1];
+        const prevFin = data.fixtures.filter(f=>f.status==='finished'&&f.kickoff&&f.kickoff.slice(0,10)<lastDate);
+        const prevTotals = {};
+        for (const f of prevFin) {
+          const homeOwner=ownership[f.home_team_id], awayOwner=ownership[f.away_team_id];
+          const pts=stagePoints[f.stage]??0;
+          const isGroup=f.stage==='group', drawn=isGroup&&f.home_score===f.away_score;
+          if (homeOwner!=null&&homeOwner===awayOwner) { prevTotals[homeOwner]=(prevTotals[homeOwner]||0)+(drawn?.5:pts); }
+          else if (drawn) { if(homeOwner!=null)prevTotals[homeOwner]=(prevTotals[homeOwner]||0)+.5; if(awayOwner!=null)prevTotals[awayOwner]=(prevTotals[awayOwner]||0)+.5; }
+          else { const winner=isGroup?(f.home_score>f.away_score?f.home_team_id:f.away_team_id):f.winner_team_id; const wo=ownership[winner]; if(wo!=null)prevTotals[wo]=(prevTotals[wo]||0)+pts; }
+        }
+        const prevRanked = [...data.players].map(p=>({id:p.id,pts:prevTotals[p.id]??0})).sort((a,b)=>b.pts-a.pts);
+        prevRankById = Object.fromEntries(prevRanked.map((p,i)=>[p.id,i+1]));
+      }
+
+      return [...data.players]
+        .map(p=>({...p, points:totals[p.id]??0, teamCount:teamCounts[p.id]??0}))
+        .sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name))
+        .map((p,i)=>({...p, movement:prevRankById?(prevRankById[p.id]??null)-(i+1):null}));
+    }
+
+    // ── Compute group standings ──────────────────────────────────────────────
+    function computeGroupStandings(data) {
+      const stand = {};
+      for (const t of data.teams)
+        stand[t.id]={id:t.id,name:t.name,code:t.code,grp:t.grp,P:0,W:0,D:0,L:0,GF:0,GA:0,GD:0,Pts:0};
+      for (const f of data.fixtures) {
+        if (f.stage!=='group'||f.status!=='finished'||f.home_score==null||f.away_score==null) continue;
+        const h=stand[f.home_team_id],a=stand[f.away_team_id];
+        if(!h||!a) continue;
+        h.P++;a.P++;h.GF+=f.home_score;h.GA+=f.away_score;a.GF+=f.away_score;a.GA+=f.home_score;
+        if(f.home_score>f.away_score){h.W++;h.Pts+=3;a.L++;}
+        else if(f.home_score<f.away_score){a.W++;a.Pts+=3;h.L++;}
+        else{h.D++;h.Pts++;a.D++;a.Pts++;}
+      }
+      for (const s of Object.values(stand)) s.GD=s.GF-s.GA;
+      const grpMap={};
+      for (const s of Object.values(stand)) (grpMap[s.grp]||=[]).push(s);
+      for (const teams of Object.values(grpMap))
+        teams.sort((a,b)=>b.Pts-a.Pts||b.GD-a.GD||b.GF-a.GF||a.name.localeCompare(b.name));
+      return Object.entries(grpMap).sort(([a],[b])=>a.localeCompare(b)).map(([grp,teams])=>({grp,teams}));
+    }
+
+    // ── Bracket builder ──────────────────────────────────────────────────────
+    function buildBracket(data, r32Overlay=[]) {
+      const teamById = byId(data.teams);
+      const playerById = byId(data.players);
+      const ownerNameByTeam = {};
+      for (const p of data.picks) {
+        const pl = playerById[p.player_id];
+        if (pl) ownerNameByTeam[p.team_id] = pl.name;
+      }
+      const fxSort = (a,b)=>{ const ka=a.kickoff?Date.parse(a.kickoff):Infinity, kb=b.kickoff?Date.parse(b.kickoff):Infinity; return ka-kb||a.id-b.id; };
+      const decorate = f => {
+        const home=teamById[f.home_team_id]||{}, away=teamById[f.away_team_id]||{};
+        return {
+          ...f,
+          home_name:home.name, away_name:away.name,
+          home_owner:ownerNameByTeam[f.home_team_id]||null,
+          away_owner:ownerNameByTeam[f.away_team_id]||null,
+          home_is_winner:f.winner_team_id!=null&&f.winner_team_id===f.home_team_id,
+          away_is_winner:f.winner_team_id!=null&&f.winner_team_id===f.away_team_id,
+        };
+      };
+      const ko = data.fixtures.filter(f=>KO_STAGES.includes(f.stage));
+      const decorated = [...ko].sort(fxSort).map(decorate);
+      const byStage = {};
+      for (const f of decorated) (byStage[f.stage]||=[]).push(f);
+
+      const rounds = KO_ROUNDS.map(rd=>{
+        const matches = rd.stage==='R32'
+          ? (byStage['R32']||[]).filter(m=>m.home_name!=null||m.away_name!=null)
+          : (byStage[rd.stage]||[]).slice();
+        while (matches.length<rd.expected) {
+          const idx=matches.length;
+          const ov=(rd.stage==='R32'&&r32Overlay[idx])||null;
+          if (ov) {
+            const ownerFor = name => {
+              if (!name) return null;
+              const t = data.teams.find(t=>t.name.toLowerCase()===name.toLowerCase());
+              if (!t) return null;
+              const p = data.picks.find(p=>p.team_id===t.id);
+              return p ? (playerById[p.player_id]||{}).name||null : null;
+            };
+            matches.push({
+              tbd:false, stage:rd.stage, status:'scheduled',
+              home_name:ov.home||null, away_name:ov.away||null,
+              home_confirmed:!!ov.home, away_confirmed:!!ov.away,
+              home_owner:ownerFor(ov.home), away_owner:ownerFor(ov.away),
+              home_score:null, away_score:null,
+              home_is_winner:false, away_is_winner:false,
+            });
+          } else {
+            matches.push({tbd:true, stage:rd.stage});
+          }
+        }
+        return {...rd, matches};
+      });
+      return { rounds, thirdPlace:(byStage.third||[])[0]||null, hasAny:ko.length>0 };
+    }
+
+    // ── Render helpers ───────────────────────────────────────────────────────
+    const initials = name => name?name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase():'?';
+
+    function movHtml(m, cur) {
+      if (m==null) return '<span class="lm-nc">—</span>';
+      if (m>0) return `<span class="lm-up">▲ ${cur+m}</span>`;
+      if (m<0) return `<span class="lm-dn">▼ ${cur+m}</span>`;
+      return '<span class="lm-nc">—</span>';
+    }
+
+    function renderLadder(ladder) {
+      return `
+      <h1>Ladder <span class="live-page-tag">TEST</span></h1>
+      <p class="hint refresh-hint">Last updated: <span id="refresh-ts">—</span> · <a href="./#/" style="opacity:.5">← Main app</a></p>
+      <div class="ladder-header">
+        <span class="lh-rank">#</span><span class="lh-move"></span>
+        <span class="lh-avatar"></span><span class="lh-name">Player</span>
+        <span class="lh-teams">Teams</span><span class="lh-pts">Pts</span>
+      </div>
+      <div class="ladder-list">
+        ${ladder.map((p,i)=>`
+          <a href="./#/draft/player/${p.id}" class="ladder-row ${i===0?'leader':''}">
+            <span class="ladder-rank">${i+1}</span>
+            <span class="ladder-move">${movHtml(p.movement,i+1)}</span>
+            <span class="ladder-avatar">${initials(p.name)}</span>
+            <span class="ladder-name">${esc(p.name)}</span>
+            <span class="ladder-teams">${p.teamCount}</span>
+            <span class="ladder-pts">${p.points}</span>
+          </a>`).join('')}
+      </div>
+      <p class="hint" style="margin-top:1rem">"Teams left" counts only your drafted nations still in the tournament. Points: group win = 1, draw = 0.5. Knockouts: R32 = 1, R16 = 2, QF = 3, SF = 4, Final = 5. Own both teams in a match? Any decisive result scores the full win, a draw scores 0.5.</p>`;
+    }
+
+    function renderGroupStandings(groups) {
+      return `
+      <div class="wcs-wrap">
+        <h2 class="wcs-title">World Cup Standings</h2>
+        <div class="wcs-groups">
+          ${groups.map(g=>`
+            <div class="wcs-group" data-expand-type="group">
+              <span class="wcs-chip">Group ${esc(g.grp)}</span>
+              <div class="wcs-table">
+                <div class="wcs-row wcs-head">
+                  <span class="wcs-pos">#</span><span class="wcs-team">Team</span>
+                  <span class="wcs-num">P</span><span class="wcs-num wcs-wdl">W</span>
+                  <span class="wcs-num wcs-wdl">D</span><span class="wcs-num wcs-wdl">L</span>
+                  <span class="wcs-num wcs-gd">GD</span><span class="wcs-num wcs-pts">Pts</span>
+                </div>
+                ${g.teams.map((t,i)=>`
+                <div class="wcs-row${i<2&&t.Pts>0?' wcs-qualify':''}">
+                  <span class="wcs-pos">${i+1}</span><span class="wcs-team">${esc(t.name)}</span>
+                  <span class="wcs-num">${t.P}</span><span class="wcs-num wcs-wdl">${t.W}</span>
+                  <span class="wcs-num wcs-wdl">${t.D}</span><span class="wcs-num wcs-wdl">${t.L}</span>
+                  <span class="wcs-num wcs-gd">${t.GD>0?'+':''}${t.GD}</span>
+                  <span class="wcs-num wcs-pts">${t.Pts}</span>
+                </div>`).join('')}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    // ── Bracket rendering (with owners + live clocks) ────────────────────────
+    function koSide(name, owner, score, isWinner, showScore, tbd, confirmed) {
+      return `
+        <div class="ko-side ${isWinner?'win':''} ${tbd?'tbd':''} ${confirmed&&!showScore?'confirmed-q':''}">
+          <span class="ko-team">${tbd?'TBD':esc(name||'TBD')}</span>
+          ${(!tbd&&owner)?`<span class="ko-owner">${esc(owner)}</span>`:''}
+          <span class="ko-score">${showScore&&score!=null?score:''}</span>
+        </div>`;
+    }
+
+    function koMatch(m, clocks={}) {
+      const finished = m.status==='finished';
+      const isLive   = m.status==='live';
+      const showScore= finished||isLive;
+      const homeTbd  = m.tbd||(m.home_name==null&&!m.home_confirmed);
+      const awayTbd  = m.tbd||(m.away_name==null&&!m.away_confirmed);
+      const allTbd   = homeTbd&&awayTbd;
+
+      const espnKey  = `${m.home_name||''}|${m.away_name||''}`;
+      const espn     = clocks[espnKey];
+      const liveDot  = isLive?`<span class="live-dot"></span>`:'';
+      const clockBadge = (isLive&&espn?.state==='in'&&espn?.clock)
+        ?`<span class="live-clock">${esc(espn.clock)}</span>`:'';
+      const liveBar  = (isLive&&(liveDot||clockBadge))
+        ?`<div class="ko-live-bar">${liveDot}${clockBadge}</div>`:'';
+
+      return `
+        <div class="ko-match ${finished?'played':''} ${allTbd?'is-tbd':''} ${isLive?'ko-live':''}"
+             data-espn-key="${esc(espnKey)}">
+          ${liveBar}
+          ${koSide(m.home_name, m.home_owner, m.home_score, m.home_is_winner, showScore, homeTbd, m.home_confirmed)}
+          ${koSide(m.away_name, m.away_owner, m.away_score, m.away_is_winner, showScore, awayTbd, m.away_confirmed)}
+        </div>`;
+    }
+
+    function bkCol(matches, side, clocks) {
+      if (matches.length===1)
+        return `<div class="bk-col bk-${side}"><div class="bk-slot">${koMatch(matches[0],clocks)}</div></div>`;
+      let html=`<div class="bk-col bk-${side}">`;
+      for (let i=0;i<matches.length;i+=2)
+        html+=`<div class="bk-pair"><div class="bk-slot">${koMatch(matches[i],clocks)}</div><div class="bk-slot">${koMatch(matches[i+1],clocks)}</div></div>`;
+      return html+'</div>';
+    }
+
+    function mbRow(feed1, feed2, advance, clocks) {
+      return `
+      <div class="mb-section">
+        <div class="mb-pair">
+          <div class="mb-slot">${koMatch(feed1,clocks)}</div>
+          <div class="mb-slot">${koMatch(feed2,clocks)}</div>
+        </div>
+        <div class="mb-advance">${koMatch(advance,clocks)}</div>
+      </div>`;
+    }
+
+    function renderBracket(b, clocks={}) {
+      if (!b.hasAny) return `<p class="hint">Bracket fills in after the group stage.</p>`;
+
+      const [r32,r16,qf,sf,fin] = b.rounds.map(r=>r.matches);
+      const half = a=>[a.slice(0,a.length/2), a.slice(a.length/2)];
+      const [r32L,r32R]=half(r32), [r16L,r16R]=half(r16), [qfL,qfR]=half(qf), [sfL,sfR]=half(sf);
+
+      let r32html='';
+      for (let i=0;i<r32.length;i+=2) r32html+=mbRow(r32[i],r32[i+1],r16[i/2],clocks);
+      let r16html='';
+      for (let i=0;i<r16.length;i+=2) r16html+=mbRow(r16[i],r16[i+1],qf[i/2],clocks);
+      const kohtml=`
+        <p class="bm-stage-lbl">Quarter-Finals → Semi-Finals <span class="round-pts">3 pts</span></p>
+        ${mbRow(qf[0],qf[1],sf[0],clocks)}
+        ${mbRow(qf[2],qf[3],sf[1],clocks)}
+        <p class="bm-stage-lbl">Semi-Finals → Final <span class="round-pts">4 pts</span></p>
+        ${mbRow(sf[0],sf[1],fin[0],clocks)}
+        ${b.thirdPlace?`<p class="bm-stage-lbl">3rd Place <span class="round-pts">–</span></p><div class="mb-solo">${koMatch(b.thirdPlace,clocks)}</div>`:''}`;
+
+      return `
+      <div class="bkt-page">
+        <div class="bkt-header">
+          <div class="bkt-hcol">R32</div><div class="bkt-hcol">R16</div>
+          <div class="bkt-hcol">QF</div><div class="bkt-hcol">SF</div>
+          <div class="bkt-hcol bkt-hcol-center">FINAL</div>
+          <div class="bkt-hcol">SF</div><div class="bkt-hcol">QF</div>
+          <div class="bkt-hcol">R16</div><div class="bkt-hcol">R32</div>
+        </div>
+        <div class="bkt-body">
+          ${bkCol(r32L,'left',clocks)}${bkCol(r16L,'left',clocks)}
+          ${bkCol(qfL,'left',clocks)}${bkCol(sfL,'left',clocks)}
+          <div class="bk-center">
+            <img class="bk-logo" src="assets/img/favicon.svg" alt="LBH">
+            <div class="bk-final-slot">${koMatch(fin[0],clocks)}</div>
+            ${b.thirdPlace?`<div class="bk-third"><p class="bk-third-lbl">3rd Place</p>${koMatch(b.thirdPlace,clocks)}</div>`:''}
+          </div>
+          ${bkCol(sfR,'right',clocks)}${bkCol(qfR,'right',clocks)}
+          ${bkCol(r16R,'right',clocks)}${bkCol(r32R,'right',clocks)}
+        </div>
+      </div>
+      <div class="bkt-mobile">
+        <input type="radio" name="bm" id="bm-r32" class="bm-input" checked>
+        <input type="radio" name="bm" id="bm-r16" class="bm-input">
+        <input type="radio" name="bm" id="bm-ko"  class="bm-input">
+        <div class="bm-tabs">
+          <label for="bm-r32" class="bm-label">R32</label>
+          <label for="bm-r16" class="bm-label">R16</label>
+          <label for="bm-ko"  class="bm-label">QF–Final</label>
+        </div>
+        <div class="bm-panel" id="bmp-r32">${r32html}</div>
+        <div class="bm-panel" id="bmp-r16">${r16html}</div>
+        <div class="bm-panel" id="bmp-ko">${kohtml}</div>
+      </div>`;
+    }
+
+    // ── Update timestamp ─────────────────────────────────────────────────────
+    function updateTs() {
+      const el=document.getElementById('refresh-ts');
+      if (el) el.textContent=new Date().toLocaleTimeString('en-AU',{timeZone:DISPLAY_TZ,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})+' AEST';
+    }
+
+    // ── Incremental score + clock update for bracket ──────────────────────────
+    function applyBracketUpdates(scores, clocks) {
+      const scoreMap = Object.fromEntries(scores.map(s=>[s.id,s]));
+      document.querySelectorAll('.ko-match[data-espn-key]').forEach(el => {
+        const espnKey = el.dataset.espnKey;
+        const espn    = clocks[espnKey]||null;
+        const isLive  = el.classList.contains('ko-live');
+
+        // Update clock bar
+        let bar = el.querySelector('.ko-live-bar');
+        if (espn?.state==='in') {
+          if (!bar) {
+            bar = document.createElement('div');
+            bar.className = 'ko-live-bar';
+            el.insertBefore(bar, el.firstChild);
+          }
+          bar.innerHTML = `<span class="live-dot"></span><span class="live-clock">${esc(espn.clock||'')}</span>`;
+          el.classList.add('ko-live');
+        } else if (bar&&!isLive) {
+          bar.remove();
+        }
+      });
+    }
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+    const app = document.getElementById('app');
+    let cachedData, cachedBracket;
+
+    async function init() {
+      const [data, clocks, standingsJson] = await Promise.all([
+        loadAll(), loadEspnClocks(), loadEspnStandings(),
+      ]);
+      cachedData = data;
+
+      const ladder   = computeLadder(data);
+      const allGroupsDone = data.fixtures.filter(f=>f.stage==='group').every(f=>f.status==='finished');
+      const groups   = allGroupsDone ? [] : computeGroupStandings(data);
+      const r32Overlay = await buildR32Overlay(standingsJson);
+      cachedBracket  = buildBracket(data, r32Overlay);
+
+      app.innerHTML =
+        renderLadder(ladder)
+        + (!allGroupsDone ? renderGroupStandings(groups) : '')
+        + `<div class="bracket-section-hdr">
+             <h2>Knockout Bracket</h2>
+             <span class="bracket-section-hint">Owner shown under each team · scores &amp; clocks update every 30 s</span>
+           </div>
+           <p class="hint" style="margin-bottom:.5rem">Advancing team highlighted. Points: R32=1, R16=2, QF=3, SF=4, Final=5.</p>`
+        + renderBracket(cachedBracket, clocks);
+
+      updateTs();
+    }
+
+    async function poll() {
+      try {
+        const [scores, clocks] = await Promise.all([loadScores(), loadEspnClocks()]);
+        applyBracketUpdates(scores, clocks);
+        updateTs();
+      } catch {}
+    }
+
+    try { await init(); }
+    catch(err) { app.innerHTML=`<p class="hint" style="color:#e5564b">Failed to load: ${esc(err.message)}</p>`; }
+
+    setInterval(poll, 30000);
+  </script>
+
+</body>
+</html>
