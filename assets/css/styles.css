@@ -1395,3 +1395,27 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
 .lbh-modal-zoom.lbh-modal-group .wcs-group { cursor: default; width: 100%; }
 .lbh-modal-zoom.lbh-modal-group .wcs-wdl { display: block !important; }
 .lbh-modal-zoom.lbh-modal-group .wcs-row { grid-template-columns: 1.4rem 1fr 1.6rem 1.6rem 1.6rem 1.6rem 2rem 2rem; }
+
+/* ---- LADDER BRACKET ---- */
+.bkt-ladder{display:block!important}
+.lbh-bracket-ladder-hdr{margin-top:2rem;margin-bottom:.25rem}
+.ko-info{min-width:0}
+.ko-owner{display:block;font-size:.72em;opacity:.48;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.ko-live-bar{display:flex;align-items:center;gap:5px;padding:3px 8px;font-size:.72em;color:#e5564b;border-bottom:1px solid rgba(229,86,75,.2);background:rgba(229,86,75,.06)}
+.ko-match.ko-live{border-color:#e5564b}
+.ko-match.ko-live .ko-score{opacity:1}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#e5564b;display:inline-block;flex:0 0 auto;animation:livepulse 1.2s ease-in-out infinite}
+.live-clock{display:inline-block;font-size:.72em;font-weight:700;color:#e5564b;background:rgba(229,86,75,.13);border:1px solid rgba(229,86,75,.3);border-radius:4px;padding:1px 6px;letter-spacing:.02em;min-width:2.2em;text-align:center;font-variant-numeric:tabular-nums}
+@keyframes livepulse{0%,100%{opacity:1}50%{opacity:.15}}
+.mb-section-r{display:flex;flex-direction:row;align-items:stretch;margin-bottom:.55rem}
+.mb-pair-r{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:.25rem;position:relative;padding-left:10px}
+.mb-pair-r .mb-slot{position:relative}
+.mb-pair-r .mb-slot::after{content:'';position:absolute;left:-10px;top:50%;width:10px;height:1px;background:var(--border-em)}
+.mb-pair-r::after{content:'';position:absolute;left:0;top:28%;bottom:28%;width:1px;background:var(--border-em)}
+.mb-advance-r{flex:1;display:flex;align-items:center;padding-right:10px;position:relative}
+.mb-advance-r::before{content:'';position:absolute;right:0;top:50%;width:10px;height:1px;background:var(--border-em)}
+.mb-advance-r>.ko-match{width:100%}
+.mirror-bracket{display:flex;align-items:start}
+.mirror-half{flex:1;min-width:0}
+.mirror-divider{flex:0 0 2px;background:var(--border);align-self:stretch;margin:0 10px}
+.qkf-tree{display:flex;align-items:stretch;min-height:220px;padding:.5rem 0}
