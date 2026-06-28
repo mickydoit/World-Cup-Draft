@@ -75,7 +75,7 @@ export function renderLadder(ladder, groups = []) {
 }
 
 // -------------------------------------------------------------- Fixtures
-export function renderFixtures(groups) {
+export function renderFixtures(groups, clocks = {}) {
   if (!groups.length) return `<h1>Fixtures</h1><p class="hint">No fixtures yet.</p>`;
 
   const card = (f) => {
@@ -85,10 +85,13 @@ export function renderFixtures(groups) {
     const isDraw = isFinished && scored && f.winner_team_id == null;
     const sep = scored ? `${f.home_score}&ndash;${f.away_score}` : 'v';
     const liveDot = isLive ? `<span class="live-dot"></span>` : '';
+    const espnKey = `${f.home_name || ''}|${f.away_name || ''}`;
+    const liveInfo = clocks[espnKey];
+    const clockBadge = (isLive && liveInfo?.state === 'in' && liveInfo?.clock) ? `<span class="live-clock">${esc(liveInfo.clock)}</span>` : '';
     return `
-    <div id="fx-${f.id}" class="fixture-card${isFinished ? ' played' : isLive ? ' live' : ''}">
+    <div id="fx-${f.id}" class="fixture-card${isFinished ? ' played' : isLive ? ' live' : ''}" data-espn-key="${esc(espnKey)}">
       <div class="fxc-top">
-        <span class="fxc-time-row"><span class="fxc-time">${esc(f.time_label || 'TBC')}</span>${liveDot}</span>
+        <span class="fxc-time-row"><span class="fxc-time">${esc(f.time_label || 'TBC')}</span>${liveDot}${clockBadge}</span>
         <span class="fxc-group">${esc(f.stage_label || '')}</span>
       </div>
       <div class="fxc-match">
@@ -148,6 +151,7 @@ export function renderFixtures(groups) {
     .fixture-card.live{border-color:#e5564b}
     .fxc-time-row{display:inline-flex;align-items:center;gap:6px;line-height:1}
     .live-dot{width:8px;height:8px;border-radius:50%;background:#e5564b;flex:0 0 auto;animation:livepulse 1.2s ease-in-out infinite}
+    .live-clock{display:inline-block;font-size:.72em;font-weight:700;color:#e5564b;background:rgba(229,86,75,.13);border:1px solid rgba(229,86,75,.3);border-radius:4px;padding:1px 6px;letter-spacing:.02em;min-width:2.2em;text-align:center;font-variant-numeric:tabular-nums}
     .fxday-badge.live-badge{color:#e5564b}
     @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.15}}
   </style>
