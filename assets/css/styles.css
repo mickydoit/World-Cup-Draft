@@ -217,6 +217,12 @@ a:hover { text-decoration: underline; }
   .splash-player-wrap { max-width: 520px; bottom: auto; top: 50%; }
 }
 
+@media (max-width: 767px) {
+  .splash-header { top: calc(8% + 5px); }
+  .splash-logo-img { width: 75vw; }
+  .splash-bar-track { top: calc(46% + 5px); }
+}
+
 /* ---- TOPBAR ---- */
 .topbar {
   display: flex;
