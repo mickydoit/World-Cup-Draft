@@ -5,7 +5,53 @@
 const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // ---------------------------------------------------------------- Ladder
-export function renderLadder(ladder, groups = []) {
+// ---- Ladder bracket (mirrored tabs, owner names, live clocks) ----
+function renderLadderBracket(b, clocks = {}) {
+  if (!b || !b.hasAny) return '';
+  const tbdSlot = '<div class="ko-side tbd"><div class="ko-info"><span class="ko-team">TBD</span></div><span class="ko-score"></span></div>';
+  const tbdMatch = `<div class="ko-match is-tbd">${tbdSlot}${tbdSlot}</div>`;
+  const koSide = (name, owner, score, isWinner, show, tbd, confirmed) =>
+    `<div class="ko-side ${isWinner ? 'win' : ''} ${tbd ? 'tbd' : ''} ${confirmed && !show ? 'confirmed-q' : ''}"><div class="ko-info"><span class="ko-team">${tbd ? 'TBD' : esc(name || 'TBD')}</span>${!tbd && owner ? `<span class="ko-owner">${esc(owner)}</span>` : ''}</div><span class="ko-score">${show && score != null ? score : ''}</span></div>`;
+  const km = (m) => {
+    if (!m) return tbdMatch;
+    const done = m.status === 'finished', live = m.status === 'live', show = done || live;
+    const htbd = m.tbd || (m.home_name == null && !m.home_confirmed);
+    const atbd = m.tbd || (m.away_name == null && !m.away_confirmed);
+    const key = `${m.home_name || ''}|${m.away_name || ''}`;
+    const espn = clocks[key];
+    const bar = live ? `<div class="ko-live-bar"><span class="live-dot"></span>${espn?.state === 'in' && espn?.clock ? `<span class="live-clock">${esc(espn.clock)}</span>` : ''}</div>` : '';
+    return `<div class="ko-match ${done ? 'played' : ''} ${htbd && atbd ? 'is-tbd' : ''} ${live ? 'ko-live' : ''}" data-espn-key="${esc(key)}">${bar}${koSide(m.home_name, m.home_owner, m.home_score, m.home_is_winner, show, htbd, m.home_confirmed)}${koSide(m.away_name, m.away_owner, m.away_score, m.away_is_winner, show, atbd, m.away_confirmed)}</div>`;
+  };
+  const mbL = (f1, f2, a) => `<div class="mb-section"><div class="mb-pair"><div class="mb-slot">${km(f1)}</div><div class="mb-slot">${km(f2)}</div></div><div class="mb-advance">${km(a)}</div></div>`;
+  const mbR = (a, f1, f2) => `<div class="mb-section-r"><div class="mb-advance-r">${km(a)}</div><div class="mb-pair-r"><div class="mb-slot">${km(f1)}</div><div class="mb-slot">${km(f2)}</div></div></div>`;
+  const [r32, r16, qf, sf, finals] = b.rounds.map((r) => r.matches);
+  const r32L = r32.slice(0, 8), r32R = r32.slice(8);
+  const r16L = r16.slice(0, 4), r16R = r16.slice(4);
+  const qfL = qf.slice(0, 2), qfR = qf.slice(2);
+  let r32LH = '', r32RH = '', r16LH = '', r16RH = '';
+  for (let i = 0; i < r32L.length; i += 2) r32LH += mbL(r32L[i], r32L[i + 1], r16L[i / 2]);
+  for (let i = 0; i < r32R.length; i += 2) r32RH += mbR(r16R[i / 2], r32R[i], r32R[i + 1]);
+  for (let i = 0; i < r16L.length; i += 2) r16LH += mbL(r16L[i], r16L[i + 1], qfL[i / 2]);
+  for (let i = 0; i < r16R.length; i += 2) r16RH += mbR(qfR[i / 2], r16R[i], r16R[i + 1]);
+  const qkf = `<div class="qkf-tree"><div class="bk-col bk-left"><div class="bk-pair"><div class="bk-slot">${km(qfL[0])}</div><div class="bk-slot">${km(qfL[1])}</div></div></div><div class="bk-col bk-left"><div class="bk-slot">${km(sf[0])}</div></div><div class="bk-center"><img class="bk-logo" src="assets/img/favicon.svg" alt="LBH"><div class="bk-final-slot">${km(finals[0])}</div>${b.thirdPlace ? `<div class="bk-third"><p class="bk-third-lbl">3rd Place</p>${km(b.thirdPlace)}</div>` : ''}</div><div class="bk-col bk-right"><div class="bk-slot">${km(sf[1])}</div></div><div class="bk-col bk-right"><div class="bk-pair"><div class="bk-slot">${km(qfR[0])}</div><div class="bk-slot">${km(qfR[1])}</div></div></div></div>`;
+  return `
+  <h2 class="lbh-bracket-ladder-hdr">Knockout Bracket</h2>
+  <div class="bkt-mobile bkt-ladder">
+    <input type="radio" name="bm" id="bm-r32" class="bm-input" checked>
+    <input type="radio" name="bm" id="bm-r16" class="bm-input">
+    <input type="radio" name="bm" id="bm-ko"  class="bm-input">
+    <div class="bm-tabs">
+      <label for="bm-r32" class="bm-label">R32</label>
+      <label for="bm-r16" class="bm-label">R16</label>
+      <label for="bm-ko"  class="bm-label">QF – Final</label>
+    </div>
+    <div class="bm-panel" id="bmp-r32"><div class="mirror-bracket"><div class="mirror-half">${r32LH}</div><div class="mirror-divider"></div><div class="mirror-half">${r32RH}</div></div></div>
+    <div class="bm-panel" id="bmp-r16"><div class="mirror-bracket"><div class="mirror-half">${r16LH}</div><div class="mirror-divider"></div><div class="mirror-half">${r16RH}</div></div></div>
+    <div class="bm-panel" id="bmp-ko">${qkf}</div>
+  </div>`;
+}
+
+export function renderLadder(ladder, groups = [], bracket = null, clocks = {}) {
   const initials = (name) => name ? name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() : '?';
   const movHtml = (m, cur) => {
     // Shows the previous rank (where the player came from), not places moved.
@@ -71,6 +117,7 @@ export function renderLadder(ladder, groups = []) {
   </div>
   <p class="hint" style="margin-top:1rem">"Teams left" counts only your drafted nations still in the tournament. Points: group win = 1, draw = 0.5. Knockouts: R32 = 1, R16 = 2, QF = 3, SF = 4, Final = 5. Own both teams in a match? Any decisive result scores the full win, a draw scores 0.5.</p>
   <div class="view-btn-wrap"><a class="view-btn" href="#/fixtures">View Fixtures</a></div>
+  ${bracket ? renderLadderBracket(bracket, clocks) : ''}
   ${wcBlock}`;
 }
 
