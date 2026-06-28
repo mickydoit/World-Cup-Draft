@@ -206,8 +206,12 @@ export function getBracket(data, r32Overlay = []) {
   const rounds = KO_ROUNDS.map((rd) => {
     // R32: skip DB placeholder fixtures with no teams — the ESPN overlay fills those slots.
     // Once an R32 match is played and teams are assigned, those DB rows take priority.
+    // Sort by bracket_pos so adjacent pairs in the array are the correct R16 opponents
+    // (ESPN's draw is non-sequential — e.g. pos 13 plays pos 15, not 14).
     const matches = rd.stage === 'R32'
-      ? (byStage['R32'] || []).filter((m) => m.home_name != null || m.away_name != null)
+      ? (byStage['R32'] || [])
+          .filter((m) => m.home_name != null || m.away_name != null)
+          .sort((a, b) => (a.bracket_pos ?? 999) - (b.bracket_pos ?? 999))
       : (byStage[rd.stage] || []).slice();
 
     // Build set of team names already covered by real DB fixtures, then walk the overlay
