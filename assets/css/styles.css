@@ -185,7 +185,7 @@ a:hover { text-decoration: underline; }
 @keyframes splash-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .splash-player-wrap {
   position: absolute;
-  bottom: 10%;
+  bottom: -15%;
   left: 50%; transform: translateX(-50%);
   width: 101%;
   max-width: 460px;
@@ -214,7 +214,7 @@ a:hover { text-decoration: underline; }
 }
 @media (min-width: 768px) {
   .splash-logo-img { width: 40vw; max-width: 320px; }
-  .splash-player-wrap { max-width: 520px; bottom: 10%; }
+  .splash-player-wrap { max-width: 520px; bottom: -15%; }
 }
 
 /* ---- TOPBAR ---- */
