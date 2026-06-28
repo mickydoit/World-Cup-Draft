@@ -40,14 +40,52 @@
     .ko-match.ko-live { border-color:#e5564b; }
     .ko-match.ko-live .ko-score { opacity:1; }
 
-    /* ── On wider screens: show R32/R16 panels in a 2-col grid ── */
-    @media (min-width:680px) {
-      #bmp-r32, #bmp-r16 {
-        display:grid !important;
-        grid-template-columns:1fr 1fr;
-        gap:1rem;
-        align-items:start;
-      }
+    /* ── Mirrored bracket section (right-side feeds, arrows face left) ── */
+    .mb-section-r {
+      display:flex; flex-direction:row-reverse; align-items:stretch; margin-bottom:.55rem;
+    }
+    .mb-pair-r {
+      flex:1; display:flex; flex-direction:column;
+      justify-content:space-around; gap:.25rem;
+      position:relative; padding-left:10px;
+    }
+    .mb-pair-r .mb-slot { position:relative; }
+    .mb-pair-r .mb-slot::after {
+      content:''; position:absolute;
+      left:-10px; top:50%;
+      width:10px; height:1px;
+      background:var(--border-em);
+    }
+    .mb-pair-r::after {
+      content:''; position:absolute;
+      left:0; top:28%; bottom:28%;
+      width:1px; background:var(--border-em);
+    }
+    .mb-advance-r {
+      flex:1; display:flex; align-items:center;
+      padding-right:10px; position:relative;
+    }
+    .mb-advance-r::before {
+      content:''; position:absolute;
+      right:0; top:50%;
+      width:10px; height:1px;
+      background:var(--border-em);
+    }
+    .mb-advance-r > .ko-match { width:100%; }
+
+    /* ── Mirror layout: two halves side by side with divider ── */
+    .mirror-bracket {
+      display:flex; align-items:start; gap:0;
+    }
+    .mirror-half { flex:1; min-width:0; }
+    .mirror-divider {
+      flex:0 0 2px; width:2px; background:var(--border);
+      align-self:stretch; margin:0 10px;
+    }
+
+    /* ── QF→Final mini-tree (uses existing bk-col/bk-center/bk-left/bk-right CSS) ── */
+    .qkf-tree {
+      display:flex; align-items:stretch; min-height:220px; padding:.5rem 0;
     }
 
     /* ── Bracket section heading ── */
@@ -504,66 +542,73 @@
         </div>`;
     }
 
-    function bkCol(matches, side, clocks) {
-      if (matches.length===1)
-        return `<div class="bk-col bk-${side}"><div class="bk-slot">${koMatch(matches[0],clocks)}</div></div>`;
-      let html=`<div class="bk-col bk-${side}">`;
-      for (let i=0;i<matches.length;i+=2)
-        html+=`<div class="bk-pair"><div class="bk-slot">${koMatch(matches[i],clocks)}</div><div class="bk-slot">${koMatch(matches[i+1],clocks)}</div></div>`;
-      return html+'</div>';
-    }
-
-    function mbRow(feed1, feed2, advance, clocks) {
-      return `
-      <div class="mb-section">
-        <div class="mb-pair">
-          <div class="mb-slot">${koMatch(feed1,clocks)}</div>
-          <div class="mb-slot">${koMatch(feed2,clocks)}</div>
-        </div>
-        <div class="mb-advance">${koMatch(advance,clocks)}</div>
-      </div>`;
-    }
-
     function renderBracket(b, clocks={}) {
       if (!b.hasAny) return `<p class="hint">Bracket fills in after the group stage.</p>`;
 
       const [r32,r16,qf,sf,fin] = b.rounds.map(r=>r.matches);
-      const half = a=>[a.slice(0,a.length/2), a.slice(a.length/2)];
-      const [r32L,r32R]=half(r32), [r16L,r16R]=half(r16), [qfL,qfR]=half(qf), [sfL,sfR]=half(sf);
+      const r32L=r32.slice(0,8), r32R=r32.slice(8);
+      const r16L=r16.slice(0,4), r16R=r16.slice(4);
+      const qfL =qf.slice(0,2),  qfR =qf.slice(2);
 
-      let r32html='';
-      for (let i=0;i<r32.length;i+=2) r32html+=mbRow(r32[i],r32[i+1],r16[i/2],clocks);
-      let r16html='';
-      for (let i=0;i<r16.length;i+=2) r16html+=mbRow(r16[i],r16[i+1],qf[i/2],clocks);
-      const kohtml=`
-        <p class="bm-stage-lbl">Quarter-Finals → Semi-Finals <span class="round-pts">3 pts</span></p>
-        ${mbRow(qf[0],qf[1],sf[0],clocks)}
-        ${mbRow(qf[2],qf[3],sf[1],clocks)}
-        <p class="bm-stage-lbl">Semi-Finals → Final <span class="round-pts">4 pts</span></p>
-        ${mbRow(sf[0],sf[1],fin[0],clocks)}
-        ${b.thirdPlace?`<p class="bm-stage-lbl">3rd Place <span class="round-pts">–</span></p><div class="mb-solo">${koMatch(b.thirdPlace,clocks)}</div>`:''}`;
+      // Left-side section: [feed1, feed2] → advance on RIGHT
+      const mbL = (feed1, feed2, advance) => `
+        <div class="mb-section">
+          <div class="mb-pair">
+            <div class="mb-slot">${koMatch(feed1,clocks)}</div>
+            <div class="mb-slot">${koMatch(feed2,clocks)}</div>
+          </div>
+          <div class="mb-advance">${koMatch(advance,clocks)}</div>
+        </div>`;
 
-      return `
-      <div class="bkt-page">
-        <div class="bkt-header">
-          <div class="bkt-hcol">R32</div><div class="bkt-hcol">R16</div>
-          <div class="bkt-hcol">QF</div><div class="bkt-hcol">SF</div>
-          <div class="bkt-hcol bkt-hcol-center">FINAL</div>
-          <div class="bkt-hcol">SF</div><div class="bkt-hcol">QF</div>
-          <div class="bkt-hcol">R16</div><div class="bkt-hcol">R32</div>
-        </div>
-        <div class="bkt-body">
-          ${bkCol(r32L,'left',clocks)}${bkCol(r16L,'left',clocks)}
-          ${bkCol(qfL,'left',clocks)}${bkCol(sfL,'left',clocks)}
+      // Right-side section: advance on LEFT ← [feed1, feed2]
+      const mbR = (advance, feed1, feed2) => `
+        <div class="mb-section-r">
+          <div class="mb-advance-r">${koMatch(advance,clocks)}</div>
+          <div class="mb-pair-r">
+            <div class="mb-slot">${koMatch(feed1,clocks)}</div>
+            <div class="mb-slot">${koMatch(feed2,clocks)}</div>
+          </div>
+        </div>`;
+
+      // ── R32 tab: left 8 → R16 left | R16 right ← right 8 ──
+      let r32LeftHtml='', r32RightHtml='';
+      for (let i=0;i<r32L.length;i+=2) r32LeftHtml +=mbL(r32L[i],r32L[i+1],r16L[i/2]);
+      for (let i=0;i<r32R.length;i+=2) r32RightHtml+=mbR(r16R[i/2],r32R[i],r32R[i+1]);
+
+      // ── R16 tab: left 4 → QF left | QF right ← right 4 ──
+      let r16LeftHtml='', r16RightHtml='';
+      for (let i=0;i<r16L.length;i+=2) r16LeftHtml +=mbL(r16L[i],r16L[i+1],qfL[i/2]);
+      for (let i=0;i<r16R.length;i+=2) r16RightHtml+=mbR(qfR[i/2],r16R[i],r16R[i+1]);
+
+      // ── QF→Final tab: mini bracket tree ──
+      const qfFinalHtml = `
+        <div class="qkf-tree">
+          <div class="bk-col bk-left">
+            <div class="bk-pair">
+              <div class="bk-slot">${koMatch(qfL[0],clocks)}</div>
+              <div class="bk-slot">${koMatch(qfL[1],clocks)}</div>
+            </div>
+          </div>
+          <div class="bk-col bk-left">
+            <div class="bk-slot">${koMatch(sf[0],clocks)}</div>
+          </div>
           <div class="bk-center">
             <img class="bk-logo" src="assets/img/favicon.svg" alt="LBH">
             <div class="bk-final-slot">${koMatch(fin[0],clocks)}</div>
             ${b.thirdPlace?`<div class="bk-third"><p class="bk-third-lbl">3rd Place</p>${koMatch(b.thirdPlace,clocks)}</div>`:''}
           </div>
-          ${bkCol(sfR,'right',clocks)}${bkCol(qfR,'right',clocks)}
-          ${bkCol(r16R,'right',clocks)}${bkCol(r32R,'right',clocks)}
-        </div>
-      </div>
+          <div class="bk-col bk-right">
+            <div class="bk-slot">${koMatch(sf[1],clocks)}</div>
+          </div>
+          <div class="bk-col bk-right">
+            <div class="bk-pair">
+              <div class="bk-slot">${koMatch(qfR[0],clocks)}</div>
+              <div class="bk-slot">${koMatch(qfR[1],clocks)}</div>
+            </div>
+          </div>
+        </div>`;
+
+      return `
       <div class="bkt-mobile">
         <input type="radio" name="bm" id="bm-r32" class="bm-input" checked>
         <input type="radio" name="bm" id="bm-r16" class="bm-input">
@@ -571,11 +616,23 @@
         <div class="bm-tabs">
           <label for="bm-r32" class="bm-label">R32</label>
           <label for="bm-r16" class="bm-label">R16</label>
-          <label for="bm-ko"  class="bm-label">QF–Final</label>
+          <label for="bm-ko"  class="bm-label">QF – Final</label>
         </div>
-        <div class="bm-panel" id="bmp-r32">${r32html}</div>
-        <div class="bm-panel" id="bmp-r16">${r16html}</div>
-        <div class="bm-panel" id="bmp-ko">${kohtml}</div>
+        <div class="bm-panel" id="bmp-r32">
+          <div class="mirror-bracket">
+            <div class="mirror-half">${r32LeftHtml}</div>
+            <div class="mirror-divider"></div>
+            <div class="mirror-half">${r32RightHtml}</div>
+          </div>
+        </div>
+        <div class="bm-panel" id="bmp-r16">
+          <div class="mirror-bracket">
+            <div class="mirror-half">${r16LeftHtml}</div>
+            <div class="mirror-divider"></div>
+            <div class="mirror-half">${r16RightHtml}</div>
+          </div>
+        </div>
+        <div class="bm-panel" id="bmp-ko">${qfFinalHtml}</div>
       </div>`;
     }
 
