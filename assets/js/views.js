@@ -8,10 +8,10 @@ const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&':
 // ---- Ladder bracket (mirrored tabs, owner names, live clocks) ----
 function renderLadderBracket(b, clocks = {}) {
   if (!b || !b.hasAny) return '';
-  const tbdSlot = '<div class="ko-side tbd"><div class="ko-info"><span class="ko-team">TBD</span></div><span class="ko-score"></span></div>';
+  const tbdSlot = '<div class="ko-side tbd"><div class="ko-info"><div class="ko-name-row"><span class="ko-team">TBD</span><span class="ko-score"></span></div></div></div>';
   const tbdMatch = `<div class="ko-match is-tbd">${tbdSlot}${tbdSlot}</div>`;
   const koSide = (name, owner, score, isWinner, show, tbd, confirmed) =>
-    `<div class="ko-side ${isWinner ? 'win' : ''} ${tbd ? 'tbd' : ''} ${confirmed && !show ? 'confirmed-q' : ''}"><div class="ko-info"><span class="ko-team">${tbd ? 'TBD' : esc(name || 'TBD')}</span>${!tbd && owner ? `<span class="ko-owner">${esc(owner)}</span>` : ''}</div><span class="ko-score">${show && score != null ? score : ''}</span></div>`;
+    `<div class="ko-side ${isWinner ? 'win' : ''} ${tbd ? 'tbd' : ''} ${confirmed && !show ? 'confirmed-q' : ''}"><div class="ko-info"><div class="ko-name-row"><span class="ko-team">${tbd ? 'TBD' : esc(name || 'TBD')}</span><span class="ko-score">${show && score != null ? score : ''}</span></div>${!tbd && owner ? `<span class="ko-owner">${esc(owner)}</span>` : ''}</div></div>`;
   const km = (m) => {
     if (!m) return tbdMatch;
     const done = m.status === 'finished', live = m.status === 'live', show = done || live;
