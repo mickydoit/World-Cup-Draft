@@ -1421,7 +1421,7 @@ body[data-route="bracket"] .container { max-width:100%; padding-left:0; padding-
 .qkf-tree{display:flex;align-items:stretch;min-height:220px;padding:.5rem 0}
 
 /* ---- Bracket card uniform height (TBD slots match real team cards) ---- */
-.bkt-ladder .ko-side { min-height:2.8rem; display:flex; flex-direction:column; gap:.1rem; }
+.bkt-ladder .ko-side { min-height:2.8rem; display:flex; flex-direction:column; gap:.1rem; align-items:stretch; }
 .ko-name-row { display:flex; align-items:center; gap:.3rem; min-width:0; }
 .ko-name-row .ko-team { flex:1; min-width:0; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ko-name-row .ko-score { flex:0 0 auto; min-width:1.1rem; text-align:right; }
