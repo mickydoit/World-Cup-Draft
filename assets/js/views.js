@@ -209,10 +209,12 @@ export function renderFixtures(groups, clocks = {}) {
 }
 
 // --------------------------------------------------------------- Bracket
+const BRACKET_SHORT = { 'Bosnia and Herzegovina': 'Bosnia', 'United States': 'USA' };
+function koName(n) { return (n && BRACKET_SHORT[n]) || n; }
 function koSide(name, score, isWinner, finished, tbd, confirmed) {
   return `
     <div class="ko-side ${isWinner ? 'win' : ''} ${tbd ? 'tbd' : ''} ${confirmed && !finished ? 'confirmed-q' : ''}">
-      <span class="ko-team">${tbd ? 'TBD' : esc(name || 'TBD')}</span>
+      <span class="ko-team">${tbd ? 'TBD' : esc(koName(name) || 'TBD')}</span>
       <span class="ko-score">${finished && score != null ? score : ''}</span>
     </div>`;
 }
