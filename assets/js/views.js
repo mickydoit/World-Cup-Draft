@@ -217,6 +217,7 @@ function koSide(name, score, isWinner, finished, tbd, confirmed) {
     </div>`;
 }
 function koMatch(m) {
+  if (!m) return '<div class="ko-match is-tbd"><div class="ko-side tbd"><div class="ko-info"><div class="ko-name-row"><span class="ko-team">TBD</span><span class="ko-score"></span></div></div></div><div class="ko-side tbd"><div class="ko-info"><div class="ko-name-row"><span class="ko-team">TBD</span><span class="ko-score"></span></div></div></div></div>';
   const finished = m.status === 'finished';
   const homeTbd = m.tbd || (m.home_name == null && !m.home_confirmed);
   const awayTbd = m.tbd || (m.away_name == null && !m.away_confirmed);
