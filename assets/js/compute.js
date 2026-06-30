@@ -208,11 +208,26 @@ export function getBracket(data, r32Overlay = []) {
     // Once an R32 match is played and teams are assigned, those DB rows take priority.
     // Sort by bracket_pos so adjacent pairs in the array are the correct R16 opponents
     // (ESPN's draw is non-sequential — e.g. pos 13 plays pos 15, not 14).
+    // Suppress null-team placeholder rows for every KO stage when a real fixture
+    // exists at the same kickoff (sync-bracket inserts real rows beside placeholders).
+    const allForStage = byStage[rd.stage] || [];
+    const realKickoffs = new Set(
+      allForStage
+        .filter(f => f.home_team_id != null || f.away_team_id != null)
+        .map(f => f.kickoff).filter(Boolean)
+    );
+    const deduped = allForStage.filter(f =>
+      !(f.home_team_id == null && f.away_team_id == null && realKickoffs.has(f.kickoff))
+    );
+
     const matches = rd.stage === 'R32'
-      ? (byStage['R32'] || [])
-          .filter((m) => m.home_name != null || m.away_name != null)
-          .sort((a, b) => (a.bracket_pos ?? 999) - (b.bracket_pos ?? 999))
-      : (byStage[rd.stage] || []).slice();
+      ? (() => {
+          const real = deduped.filter(m => m.home_name != null || m.away_name != null);
+          if (real.some(m => m.bracket_pos == null))
+            console.warn('[bracket] R32 rows missing bracket_pos — order may be wrong');
+          return real.sort((a, b) => (a.bracket_pos ?? 999) - (b.bracket_pos ?? 999));
+        })()
+      : deduped.slice();
 
     // Build set of team names already covered by real DB fixtures, then walk the overlay
     // sequentially skipping any entry whose teams are already represented — this prevents
@@ -260,6 +275,25 @@ export function getBracket(data, r32Overlay = []) {
     return { ...rd, matches };
   });
 
+  // Dev-only bracket slot debug — activate with: window.LBH_DEBUG = true in console
+  if (typeof window !== 'undefined' && window.LBH_DEBUG) {
+    const dbgR32 = rounds.find(r => r.stage === 'R32');
+    const dbgR16 = rounds.find(r => r.stage === 'R16');
+    if (dbgR32) {
+      console.group('[bracket] R32 slots');
+      dbgR32.matches.forEach((m, i) =>
+        console.log(`slot ${i}: ${m.home_name ?? 'TBD'} vs ${m.away_name ?? 'TBD'} | id=${m.id ?? 'overlay'} | bracket_pos=${m.bracket_pos ?? 'null'}`));
+      console.groupEnd();
+    }
+    if (dbgR16) {
+      console.group('[bracket] R16 slots + expected feeders');
+      dbgR16.matches.forEach((m, i) => {
+        const f1 = dbgR32?.matches[i * 2], f2 = dbgR32?.matches[i * 2 + 1];
+        console.log(`slot ${i}: ${m.home_name ?? 'TBD'} vs ${m.away_name ?? 'TBD'} | feeders: [${f1?.home_name ?? '?'} vs ${f1?.away_name ?? '?'}] + [${f2?.home_name ?? '?'} vs ${f2?.away_name ?? '?'}]`);
+      });
+      console.groupEnd();
+    }
+  }
   return { rounds, thirdPlace: (byStage.third || [])[0] || null, hasAny: ko.length > 0 };
 }
 
