@@ -275,6 +275,20 @@ export function getBracket(data, r32Overlay = []) {
     return { ...rd, matches };
   });
 
+  // Propagate round winners into next-round TBD slots so advancing teams show in bracket
+  for (let ri = 0; ri + 1 < rounds.length; ri++) {
+    const curr = rounds[ri].matches;
+    const nxt  = rounds[ri + 1] ? rounds[ri + 1].matches : [];
+    for (let i = 0; i < curr.length; i++) {
+      const m = curr[i];
+      if (!m || !m.winner_team_id) continue;
+      const winName = m.winner_team_id === m.home_team_id ? m.home_name : m.away_name;
+      const slot = nxt[Math.floor(i / 2)];
+      if (!slot) continue;
+      if (i % 2 === 0 && slot.home_team_id == null) { slot.home_name = winName; slot.home_confirmed = true; }
+      else if (i % 2 === 1 && slot.away_team_id == null) { slot.away_name = winName; slot.away_confirmed = true; }
+    }
+  }
   // Dev-only bracket slot debug — activate with: window.LBH_DEBUG = true in console
   if (typeof window !== 'undefined' && window.LBH_DEBUG) {
     const dbgR32 = rounds.find(r => r.stage === 'R32');
