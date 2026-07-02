@@ -22,11 +22,13 @@
 .bt-radial { max-width: 740px; margin: 0 auto; }
 .bt-radial svg { width: 100%; height: auto; display: block; }
 
+/* Lines follow the app's purple accent family (--accent #A855F7):
+   lavender solid = winner path, mid purple = team known, faint dotted = TBD. */
 .bt-lines line { pointer-events: none; }
-.bt-l-tbd   { stroke: rgba(var(--bt-gold), .28); stroke-width: 1; stroke-dasharray: 2 5; stroke-linecap: round; }
-.bt-l-known { stroke: rgba(var(--bt-gold), .55); stroke-width: 1.2; stroke-linecap: round; }
-.bt-l-won   { stroke: var(--bt-teal); stroke-width: 2; opacity: .85; stroke-linecap: round; }
-.bt-l-lost  { stroke: rgba(var(--bt-gold), .14); stroke-width: 1; stroke-linecap: round; }
+.bt-l-tbd   { stroke: rgba(168, 85, 247, .25); stroke-width: 1; stroke-dasharray: 2 5; stroke-linecap: round; }
+.bt-l-known { stroke: rgba(168, 85, 247, .5); stroke-width: 1.2; stroke-linecap: round; }
+.bt-l-won   { stroke: #c084fc; stroke-width: 2.2; opacity: .95; stroke-linecap: round; }
+.bt-l-lost  { stroke: rgba(255, 255, 255, .08); stroke-width: 1; stroke-linecap: round; }
 
 .bt-node { cursor: pointer; }
 .bt-node .bt-hit { fill: transparent; }
@@ -35,19 +37,18 @@
 .bt-node.bt-sel .bt-badge-ring { stroke: var(--accent); stroke-width: 2; }
 
 .bt-badge-disc { fill: var(--bg-2); stroke: var(--border); stroke-width: 1; }
-.bt-badge-ring { fill: var(--bg-2); stroke: rgba(var(--bt-gold), .55); stroke-width: 1; }
+.bt-badge-ring { fill: var(--bg-2); stroke: rgba(168, 85, 247, .5); stroke-width: 1; }
 .bt-ring-prov  { stroke: var(--bt-teal); stroke-width: 1.6; }
 .bt-team-code {
   font-family: var(--font); font-weight: 800; font-size: 11px;
   fill: var(--text-3); text-anchor: middle; pointer-events: none;
 }
-.bt-slot-tbd { fill: rgba(var(--bt-gold), .55); }
+.bt-slot-tbd { fill: rgba(168, 85, 247, .55); }
 .bt-slot-live { fill: rgba(232, 53, 26, .18); animation: bt-pulse 1.2s ease-in-out infinite; }
 
-.bt-trophy-txt { font-size: 56px; text-anchor: middle; filter: drop-shadow(0 0 14px rgba(var(--bt-gold), .55)); }
 .bt-champ-label {
   font-family: var(--font); font-weight: 800; font-size: 10px; letter-spacing: .22em;
-  fill: rgba(var(--bt-gold), .9); text-anchor: middle;
+  fill: #c084fc; text-anchor: middle;
 }
 
 /* ---- detail card under the circle ---- */

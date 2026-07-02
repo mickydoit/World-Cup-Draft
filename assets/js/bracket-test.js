@@ -340,7 +340,7 @@ export function buildBracketTestModel(data, espnById, espnOk = true) {
 // ring (16 adjacent pairs), winner slots on inner rings at the mean angle of
 // their feeders, trophy at the centre. No DOM measurement anywhere.
 const R_SIZE = 720, R_C = 360;
-const RING = { team: 316, R32: 244, R16: 180, QF: 118, SF: 62 };
+const RING = { team: 316, R32: 244, R16: 180, QF: 118, SF: 74 };
 const rad = (deg) => (deg * Math.PI) / 180;
 const posAt = (deg, r) => [
   Math.round((R_C + r * Math.sin(rad(deg))) * 10) / 10,
@@ -453,14 +453,15 @@ function renderRadial(model) {
   const champId = fin.winnerTeamId ?? fin.provisionalWinnerTeamId;
   const champ = champId != null
     ? `<g class="bt-node" data-bt-node="104"><title>${esc(nodeTitle(fin))}</title>
-        ${svgFlagBadge((fin.home && fin.home.teamId === champId ? fin.home : fin.away).name, champId, R_C, R_C - 62, 40, fin.winnerTeamId == null, model)}
-        <text x="${R_C}" y="${R_C - 30}" class="bt-champ-label">CHAMPION</text></g>`
+        <text x="${R_C}" y="${R_C - 128}" class="bt-champ-label">CHAMPION</text>
+        ${svgFlagBadge((fin.home && fin.home.teamId === champId ? fin.home : fin.away).name, champId, R_C, R_C - 100, 40, fin.winnerTeamId == null, model)}</g>`
     : '';
+  // Official WC26 emblem (real trophy, transparent PNG committed to the repo).
   const centre = `
     <circle cx="${R_C}" cy="${R_C}" r="118" fill="url(#btGlow)"/>
     <g class="bt-node" data-bt-node="104"><title>${esc(nodeTitle(fin))}</title>
-      <circle cx="${R_C}" cy="${R_C}" r="46" class="bt-hit"/>
-      <text x="${R_C}" y="${R_C + 24}" class="bt-trophy-txt">🏆</text>
+      <circle cx="${R_C}" cy="${R_C}" r="52" class="bt-hit"/>
+      <image href="assets/img/bt-trophy.png" x="${R_C - 55}" y="${R_C - 55}" width="110" height="110"/>
     </g>
     ${champ}`;
 
@@ -640,7 +641,7 @@ function ensureCss() {
   const link = document.createElement('link');
   link.id = 'bt-css';
   link.rel = 'stylesheet';
-  link.href = 'assets/css/bracket-test.css?v=2';
+  link.href = 'assets/css/bracket-test.css?v=3';
   document.head.appendChild(link);
 }
 
