@@ -286,6 +286,14 @@ async function render(opts = {}) {
         }
         break;
       }
+      case '/bracket-test': {
+        // Hidden experimental bracket prototype — reachable only by typing the
+        // URL; deliberately absent from NAV/bottom-nav. Lazy import so normal
+        // visitors never download it.
+        const bt = await import('./bracket-test.js?v=1');
+        body = await bt.renderBracketTestPage(data);
+        break;
+      }
       case '/admin':
         if (!isAdmin) { body = renderLogin(loginError); loginError = null; }
         else {
@@ -356,7 +364,7 @@ function scrollToCurrentMatch(route) {
 // Ladder + fixtures refresh themselves so entered scores appear without a reload.
 function setAutoRefresh(route) {
   if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
-  if (route === '/' || route === '/fixtures') {
+  if (route === '/' || route === '/fixtures' || route === '/bracket-test') {
     refreshTimer = setInterval(() => { if (currentRoute() === route) render(); }, route === '/fixtures' ? 30000 : 60000);
   } else if (route === '/draft') {
     // Waiting players poll so picks appear live; the person mid-pick isn't yanked.
