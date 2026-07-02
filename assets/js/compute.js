@@ -165,15 +165,17 @@ const fxSort = (a, b) => {
 export function getFixturesView(data) {
   const teamById = byId(data.teams);
   const owners = ownerNames(data);
-  // Suppress null-team R32 placeholder rows when a real fixture exists at the same kickoff.
-  // The sync-bracket job inserts real fixtures alongside the original placeholders.
-  const r32RealKickoffs = new Set(
+  // Suppress null-team knockout placeholder rows when a real fixture exists in
+  // the same stage at the same kickoff instant — sync-bracket inserts real rows
+  // alongside the original placeholders. Compare timestamps (not raw strings)
+  // and cover every KO stage, not just R32.
+  const realKoKickoffs = new Set(
     data.fixtures
-      .filter(f => f.stage === 'R32' && (f.home_team_id != null || f.away_team_id != null) && f.kickoff)
-      .map(f => f.kickoff)
+      .filter(f => KO_STAGES.includes(f.stage) && (f.home_team_id != null || f.away_team_id != null) && f.kickoff)
+      .map(f => f.stage + ':' + Date.parse(f.kickoff))
   );
   const fixtures = [...data.fixtures]
-    .filter(f => !(f.stage === 'R32' && f.home_team_id == null && f.away_team_id == null && r32RealKickoffs.has(f.kickoff)))
+    .filter(f => !(KO_STAGES.includes(f.stage) && f.home_team_id == null && f.away_team_id == null && f.kickoff && realKoKickoffs.has(f.stage + ':' + Date.parse(f.kickoff))))
     .sort(fxSort)
     .map((f) => decorateFixture(f, teamById, owners));
   const groups = {};
