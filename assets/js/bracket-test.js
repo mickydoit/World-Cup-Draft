@@ -423,8 +423,9 @@ function renderRadial(model) {
       lines += `<line x1="${from[0]}" y1="${from[1]}" x2="${wx}" y2="${wy}" class="${lineCls(n, side)}"/>`;
     }
 
-    // Tap targets point at the match the user cares about NEXT: a badge that
-    // has already advanced opens its upcoming matchup, not the finished game.
+    // Tap targets: an outer-ring flag opens ITS OWN game (past or upcoming);
+    // an advanced winner flag one ring in opens the match it feeds into —
+    // e.g. England next to DR Congo → M80, England's advanced flag → M92.
     const wid = n.winnerTeamId ?? n.provisionalWinnerTeamId;
 
     // Outer ring: the 16 R32 pairs as badges.
@@ -434,8 +435,7 @@ function renderRadial(model) {
         if (!t) continue;
         const [x, y] = posAt(teamAngle[`${m}:${side}`], RING.team);
         const out = model.eliminated.has(t.teamId);
-        const target = wid != null && wid === t.teamId && FEEDS[m] ? FEEDS[m].match : m;
-        badges += `<g class="bt-node ${out ? 'bt-out' : ''}" data-bt-node="${target}"><title>${esc(nodeTitle(nodes[target]))}</title>${svgBadge(t, x, y, 40, '', model.logoByTeamId)}</g>`;
+        badges += `<g class="bt-node ${out ? 'bt-out' : ''}" data-bt-node="${m}"><title>${esc(nodeTitle(n))}</title>${svgBadge(t, x, y, 40, '', model.logoByTeamId)}</g>`;
       }
     }
 
