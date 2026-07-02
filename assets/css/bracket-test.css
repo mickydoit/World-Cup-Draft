@@ -96,13 +96,6 @@
 .bt-side.bt-prov .bt-team::after { content: ' •'; color: var(--bt-teal); }
 .bt-side.bt-tbd .bt-team { color: var(--text-3); font-style: italic; font-weight: 600; font-size: .78rem; }
 
-.bt-feed {
-  margin-top: 6px; padding-top: 5px; border-top: 1px dashed var(--border);
-  font-size: .65rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
-  color: var(--bt-teal);
-}
-.bt-feed span { color: var(--text-3); }
-
 /* ---- collapsible round-by-round list ---- */
 .bt-listwrap {
   margin: 18px 0 0; border: 1px solid var(--border); border-radius: var(--r);

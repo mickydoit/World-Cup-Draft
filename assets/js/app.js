@@ -290,7 +290,7 @@ async function render(opts = {}) {
         // Hidden experimental bracket prototype — reachable only by typing the
         // URL; deliberately absent from NAV/bottom-nav. Lazy import so normal
         // visitors never download it.
-        const bt = await import('./bracket-test.js?v=4');
+        const bt = await import('./bracket-test.js?v=5');
         body = await bt.renderBracketTestPage(data);
         break;
       }
@@ -315,7 +315,7 @@ async function render(opts = {}) {
         // On any failure the ladder still renders, just without the bracket.
         let radialHtml = '';
         try {
-          const bt = await import('./bracket-test.js?v=4');
+          const bt = await import('./bracket-test.js?v=5');
           radialHtml = await bt.renderLadderRadial(data);
         } catch (err) { console.error('ladder bracket failed:', err); }
         body = renderLadder(getLadder(data), getGroupStandings(data), radialHtml);

@@ -504,14 +504,11 @@ function statusHtml(n) {
 
 function matchCard(n, opts = {}) {
   const cls = ['bt-match', n.status === 'finished' ? 'bt-played' : '', n.live ? 'bt-islive' : ''].join(' ');
-  const feed = opts.showFeed && n.feedsInto
-    ? `<div class="bt-feed">→ feeds M${n.feedsInto.match} <span>(${n.feedsInto.slot})</span></div>` : '';
   const roundTag = opts.showRound ? `<span class="bt-mround">${esc(n.round)}</span>` : '';
   return `<div class="${cls}" data-match="${n.matchId}">
     <div class="bt-mhead"><span class="bt-mnum">M${n.matchId}</span>${roundTag}${statusHtml(n)}</div>
     ${sideHtml(n.home, n.homeTbd)}
     ${sideHtml(n.away, n.awayTbd)}
-    ${feed}
   </div>`;
 }
 
@@ -532,7 +529,7 @@ function roundMatchIds(model, stageKey) {
 }
 
 function renderRoundList(model, stageKey) {
-  return roundMatchIds(model, stageKey).map((m) => matchCard(model.nodes[m], { showFeed: true })).join('');
+  return roundMatchIds(model, stageKey).map((m) => matchCard(model.nodes[m])).join('');
 }
 
 function defaultTab(model) {
@@ -634,7 +631,7 @@ function installHandlers() {
     if (node) {
       const m = Number(node.dataset.btNode);
       const detail = document.getElementById('bt-detail');
-      if (detail && window.__btModel.nodes[m]) detail.innerHTML = matchCard(window.__btModel.nodes[m], { showFeed: true, showRound: true });
+      if (detail && window.__btModel.nodes[m]) detail.innerHTML = matchCard(window.__btModel.nodes[m], { showRound: true });
       document.querySelectorAll('.bt-node.bt-sel').forEach((x) => x.classList.remove('bt-sel'));
       node.classList.add('bt-sel');
     }
@@ -646,7 +643,7 @@ function ensureCss() {
   const link = document.createElement('link');
   link.id = 'bt-css';
   link.rel = 'stylesheet';
-  link.href = 'assets/css/bracket-test.css?v=4';
+  link.href = 'assets/css/bracket-test.css?v=5';
   document.head.appendChild(link);
 }
 
@@ -667,7 +664,7 @@ export async function renderLadderRadial(data) {
   <h2 class="lbh-bracket-ladder-hdr">Knockout Bracket</h2>
   <div class="bt-wrap bt-onladder">
     ${renderRadial(model)}
-    <div class="bt-detail" id="bt-detail">${matchCard(model.nodes[defaultDetailMatch(model)], { showFeed: true, showRound: true })}</div>
+    <div class="bt-detail" id="bt-detail">${matchCard(model.nodes[defaultDetailMatch(model)], { showRound: true })}</div>
   </div>`;
 }
 
@@ -697,7 +694,7 @@ export async function renderBracketTestPage(data) {
     <p class="hint">Experimental prototype — official-topology radial bracket. Tap any badge or slot for match details. Auto-refreshes every 60s.</p>
     <div class="bt-status">${chips}</div>
     ${renderRadial(model)}
-    <div class="bt-detail" id="bt-detail">${matchCard(model.nodes[defaultDetailMatch(model)], { showFeed: true, showRound: true })}</div>
+    <div class="bt-detail" id="bt-detail">${matchCard(model.nodes[defaultDetailMatch(model)], { showRound: true })}</div>
     ${renderMatchList(model)}
     ${renderDebugPanel(model)}
   </div>`;
