@@ -51,7 +51,7 @@ function renderLadderBracket(b, clocks = {}) {
   </div>`;
 }
 
-export function renderLadder(ladder, groups = [], bracket = null, clocks = {}) {
+export function renderLadder(ladder, groups = [], bracketHtml = null, clocks = {}) {
   const initials = (name) => name ? name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() : '?';
   const movHtml = (m, cur) => {
     // Shows the previous rank (where the player came from), not places moved.
@@ -117,7 +117,7 @@ export function renderLadder(ladder, groups = [], bracket = null, clocks = {}) {
   </div>
   <p class="hint" style="margin-top:1rem">"Teams left" counts only your drafted nations still in the tournament. Points: group win = 1, draw = 0.5. Knockouts: R32 = 1, R16 = 2, QF = 3, SF = 4, Final = 5. Own both teams in a match? Any decisive result scores the full win, a draw scores 0.5.</p>
   <div class="view-btn-wrap"><a class="view-btn" href="#/fixtures">View Fixtures</a></div>
-  ${bracket ? renderLadderBracket(bracket, clocks) : ''}
+  ${bracketHtml || ''}
   ${wcBlock}`;
 }
 

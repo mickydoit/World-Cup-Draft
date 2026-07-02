@@ -423,25 +423,30 @@ function renderRadial(model) {
       lines += `<line x1="${from[0]}" y1="${from[1]}" x2="${wx}" y2="${wy}" class="${lineCls(n, side)}"/>`;
     }
 
-    // Outer ring: the 16 R32 pairs as crest badges.
+    // Tap targets point at the match the user cares about NEXT: a badge that
+    // has already advanced opens its upcoming matchup, not the finished game.
+    const wid = n.winnerTeamId ?? n.provisionalWinnerTeamId;
+
+    // Outer ring: the 16 R32 pairs as badges.
     if (!n.homeSource) {
       for (const side of ['home', 'away']) {
         const t = n[side];
         if (!t) continue;
         const [x, y] = posAt(teamAngle[`${m}:${side}`], RING.team);
         const out = model.eliminated.has(t.teamId);
-        badges += `<g class="bt-node ${out ? 'bt-out' : ''}" data-bt-node="${m}"><title>${esc(nodeTitle(n))}</title>${svgBadge(t, x, y, 40, '', model.logoByTeamId)}</g>`;
+        const target = wid != null && wid === t.teamId && FEEDS[m] ? FEEDS[m].match : m;
+        badges += `<g class="bt-node ${out ? 'bt-out' : ''}" data-bt-node="${target}"><title>${esc(nodeTitle(nodes[target]))}</title>${svgBadge(t, x, y, 40, '', model.logoByTeamId)}</g>`;
       }
     }
 
-    // Winner slot: flag badge once decided, small dot while TBD.
-    const wid = n.winnerTeamId ?? n.provisionalWinnerTeamId;
+    // Winner slot: flag badge once decided (tap → next match), dot while TBD.
     const prov = n.winnerTeamId == null && n.provisionalWinnerTeamId != null;
     const live = n.live ? `<circle cx="${wx}" cy="${wy}" r="18" class="bt-slot-live"/>` : '';
+    const slotTarget = wid != null && FEEDS[m] ? FEEDS[m].match : m;
     const inner = wid != null
       ? svgFlagBadge((nodes[m].home && nodes[m].home.teamId === wid ? nodes[m].home : nodes[m].away).name, wid, wx, wy, 28, prov, model)
       : `<circle cx="${wx}" cy="${wy}" r="4" class="bt-slot-tbd"/>`;
-    slots += `<g class="bt-node" data-bt-node="${m}"><title>${esc(nodeTitle(n))}</title>${live}<circle cx="${wx}" cy="${wy}" r="17" class="bt-hit"/>${inner}</g>`;
+    slots += `<g class="bt-node" data-bt-node="${slotTarget}"><title>${esc(nodeTitle(nodes[slotTarget]))}</title>${live}<circle cx="${wx}" cy="${wy}" r="17" class="bt-hit"/>${inner}</g>`;
   }
 
   // Final: both SF winner slots feed the centre.
@@ -467,7 +472,7 @@ function renderRadial(model) {
 
   return `<div class="bt-radial"><svg viewBox="0 0 ${R_SIZE} ${R_SIZE}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="World Cup knockout bracket">
     <defs>
-      <radialGradient id="btGlow"><stop offset="0%" stop-color="rgba(212,175,55,.28)"/><stop offset="55%" stop-color="rgba(212,175,55,.10)"/><stop offset="100%" stop-color="rgba(212,175,55,0)"/></radialGradient>
+      <radialGradient id="btGlow"><stop offset="0%" stop-color="rgba(168,85,247,.32)"/><stop offset="55%" stop-color="rgba(168,85,247,.12)"/><stop offset="100%" stop-color="rgba(168,85,247,0)"/></radialGradient>
     </defs>
     <g class="bt-lines">${lines}</g>
     ${centre}
@@ -641,11 +646,31 @@ function ensureCss() {
   const link = document.createElement('link');
   link.id = 'bt-css';
   link.rel = 'stylesheet';
-  link.href = 'assets/css/bracket-test.css?v=3';
+  link.href = 'assets/css/bracket-test.css?v=4';
   document.head.appendChild(link);
 }
 
 // ---------------------------------------------------------------- entry
+// Ladder embed: the radial + tap-detail card only (no chips/list/debug).
+// Returns '' -safe HTML; caller wraps it in try/catch so the ladder page
+// can never break on this section.
+export async function renderLadderRadial(data) {
+  ensureCss();
+  installHandlers();
+  const espn = await loadEspnEvents();
+  const model = buildBracketTestModel(data, espn.byId, espn.ok);
+  if (typeof window !== 'undefined') {
+    window.__btModel = model;
+    if (model.checks.topologyMismatches.length) console.warn('[bracket] topology mismatches:', model.checks.topologyMismatches);
+  }
+  return `
+  <h2 class="lbh-bracket-ladder-hdr">Knockout Bracket</h2>
+  <div class="bt-wrap bt-onladder">
+    ${renderRadial(model)}
+    <div class="bt-detail" id="bt-detail">${matchCard(model.nodes[defaultDetailMatch(model)], { showFeed: true, showRound: true })}</div>
+  </div>`;
+}
+
 export async function renderBracketTestPage(data) {
   ensureCss();
   installHandlers();

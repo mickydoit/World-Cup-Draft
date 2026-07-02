@@ -19,6 +19,7 @@
 .bt-chip.bt-warn { border-color: rgba(232, 53, 26, .5); color: var(--red); }
 
 /* ---- radial bracket ---- */
+.bt-wrap.bt-onladder { margin-top: 8px; }
 .bt-radial { max-width: 740px; margin: 0 auto; }
 .bt-radial svg { width: 100%; height: auto; display: block; }
 
