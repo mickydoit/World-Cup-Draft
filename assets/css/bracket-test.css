@@ -1,5 +1,5 @@
 /* ==========================================================================
-   #/bracket-test — experimental bracket prototype (all classes bt- scoped).
+   #/bracket-test — experimental radial bracket prototype (bt- scoped).
    Loaded only by assets/js/bracket-test.js; never referenced by other pages.
    Uses the app's theme variables so light/dark follow the global toggle.
    ========================================================================== */
@@ -9,7 +9,7 @@
 .bt-wrap .hint { margin-top: -4px; }
 
 /* ---- status chips ---- */
-.bt-status { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+.bt-status { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
 .bt-chip {
   font-family: var(--font); font-size: .68rem; font-weight: 700; letter-spacing: .05em;
   padding: 3px 10px; border-radius: 999px; text-transform: uppercase;
@@ -18,36 +18,45 @@
 .bt-chip.bt-ok { border-color: rgba(45, 212, 191, .45); color: var(--bt-teal); }
 .bt-chip.bt-warn { border-color: rgba(232, 53, 26, .5); color: var(--red); }
 
-/* ---- desktop / tablet canvas ---- */
-.bt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; }
-.bt-canvas { width: 1530px; margin: 0 auto; }
-.bt-heads, .bt-canvas-body {
-  display: grid;
-  grid-template-columns: repeat(4, 140px) 170px repeat(4, 140px);
-  column-gap: 30px;
+/* ---- radial bracket ---- */
+.bt-radial { max-width: 740px; margin: 0 auto; }
+.bt-radial svg { width: 100%; height: auto; display: block; }
+
+.bt-lines line { pointer-events: none; }
+.bt-l-tbd   { stroke: rgba(var(--bt-gold), .28); stroke-width: 1; stroke-dasharray: 2 5; stroke-linecap: round; }
+.bt-l-known { stroke: rgba(var(--bt-gold), .55); stroke-width: 1.2; stroke-linecap: round; }
+.bt-l-won   { stroke: var(--bt-teal); stroke-width: 2; opacity: .85; stroke-linecap: round; }
+.bt-l-lost  { stroke: rgba(var(--bt-gold), .14); stroke-width: 1; stroke-linecap: round; }
+
+.bt-node { cursor: pointer; }
+.bt-node .bt-hit { fill: transparent; }
+.bt-node.bt-out { opacity: .38; }
+.bt-node.bt-sel .bt-badge-disc,
+.bt-node.bt-sel .bt-badge-ring { stroke: var(--accent); stroke-width: 2; }
+
+.bt-badge-disc { fill: var(--bg-2); stroke: var(--border); stroke-width: 1; }
+.bt-badge-ring { fill: var(--bg-2); stroke: rgba(var(--bt-gold), .55); stroke-width: 1; }
+.bt-ring-prov  { stroke: var(--bt-teal); stroke-width: 1.6; }
+.bt-team-code {
+  font-family: var(--font); font-weight: 800; font-size: 11px;
+  fill: var(--text-3); text-anchor: middle; pointer-events: none;
 }
-.bt-canvas-body { position: relative; }
-.bt-colhead {
-  text-align: center; font-family: var(--font); font-weight: 800; font-size: .68rem;
-  letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); padding-bottom: 10px;
-}
-.bt-col {
-  display: flex; flex-direction: column; justify-content: space-around;
-  row-gap: 8px; position: relative; z-index: 1; min-height: 640px;
+.bt-slot-tbd { fill: rgba(var(--bt-gold), .55); }
+.bt-slot-live { fill: rgba(232, 53, 26, .18); animation: bt-pulse 1.2s ease-in-out infinite; }
+
+.bt-trophy-txt { font-size: 56px; text-anchor: middle; filter: drop-shadow(0 0 14px rgba(var(--bt-gold), .55)); }
+.bt-champ-label {
+  font-family: var(--font); font-weight: 800; font-size: 10px; letter-spacing: .22em;
+  fill: rgba(var(--bt-gold), .9); text-anchor: middle;
 }
 
-/* connector lines sit behind the cards */
-.bt-lines { position: absolute; top: 0; left: 0; z-index: 0; pointer-events: none; }
-.bt-lines .bt-line {
-  stroke: rgba(var(--bt-gold), .45); stroke-width: 1.5; stroke-dasharray: 2 5;
-  stroke-linecap: round; fill: none;
-}
-.bt-lines .bt-line-won { stroke: var(--bt-teal); stroke-width: 2; opacity: .8; fill: none; }
+/* ---- detail card under the circle ---- */
+.bt-detail { max-width: 430px; margin: 10px auto 0; }
 
 /* ---- match card ---- */
 .bt-match {
   background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r-sm);
-  padding: 6px 8px 7px; font-family: var(--font);
+  padding: 7px 9px 8px; font-family: var(--font);
 }
 .bt-match.bt-islive { border-color: rgba(232, 53, 26, .55); }
 .bt-mhead {
@@ -56,6 +65,7 @@
   color: var(--text-3); padding-bottom: 4px;
 }
 .bt-mnum { color: var(--accent); }
+.bt-mround { margin-right: auto; }
 .bt-mstat { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bt-mstat.bt-ft { color: var(--text-3); }
 .bt-livechip { color: var(--red); display: inline-flex; align-items: center; gap: 4px; }
@@ -69,50 +79,21 @@
 .bt-side + .bt-side { margin-top: 2px; }
 .bt-twrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .bt-team {
-  font-weight: 700; font-size: .85rem; line-height: 1.15; color: var(--text);
+  font-weight: 700; font-size: .92rem; line-height: 1.15; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .bt-own {
   font-size: .6rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
   color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.bt-sc { font-weight: 800; font-size: .9rem; min-width: 14px; text-align: right; color: var(--text-2); }
+.bt-sc { font-weight: 800; font-size: .95rem; min-width: 14px; text-align: right; color: var(--text-2); }
 
 .bt-side.bt-win { background: var(--accent-dim); box-shadow: inset 2px 0 0 var(--bt-teal); }
 .bt-side.bt-win .bt-team { color: var(--accent); font-weight: 800; }
 .bt-side.bt-win .bt-sc { color: var(--accent); }
 .bt-side.bt-prov .bt-team::after { content: ' •'; color: var(--bt-teal); }
-.bt-side.bt-tbd .bt-team { color: var(--text-3); font-style: italic; font-weight: 600; font-size: .75rem; }
+.bt-side.bt-tbd .bt-team { color: var(--text-3); font-style: italic; font-weight: 600; font-size: .78rem; }
 
-/* ---- centre column (final + third) ---- */
-.bt-col.bt-center { justify-content: center; row-gap: 12px; }
-.bt-trophy {
-  text-align: center; font-size: 2.4rem; line-height: 1;
-  filter: drop-shadow(0 0 18px rgba(var(--bt-gold), .5));
-}
-.bt-match.bt-big {
-  border-color: rgba(var(--bt-gold), .5);
-  box-shadow: 0 0 36px rgba(var(--bt-gold), .13);
-  padding: 10px 10px 11px;
-}
-.bt-match.bt-big .bt-team { font-size: 1rem; }
-.bt-thirdwrap { opacity: .85; }
-.bt-thirdlabel {
-  text-align: center; font-size: .6rem; font-weight: 800; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--text-3); margin: 10px 0 4px;
-}
-
-/* ---- mobile: round tabs + stacked list ---- */
-.bt-mobile { display: none; }
-.bt-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; }
-.bt-tab {
-  font-family: var(--font); font-weight: 800; font-size: .8rem; letter-spacing: .07em;
-  padding: 7px 16px; border-radius: 999px; cursor: pointer; flex: none;
-  border: 1px solid var(--border); background: var(--bg-2); color: var(--text-2);
-}
-.bt-tab.bt-tab-on { background: var(--accent); border-color: var(--accent); color: #fff; }
-.bt-mobile-list .bt-match { margin-bottom: 10px; }
-.bt-mobile-list .bt-team { font-size: .95rem; }
 .bt-feed {
   margin-top: 6px; padding-top: 5px; border-top: 1px dashed var(--border);
   font-size: .65rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
@@ -120,19 +101,28 @@
 }
 .bt-feed span { color: var(--text-3); }
 
-@media (max-width: 767px) {
-  .bt-scroll { display: none; }
-  .bt-mobile { display: block; }
+/* ---- collapsible round-by-round list ---- */
+.bt-listwrap {
+  margin: 18px 0 0; border: 1px solid var(--border); border-radius: var(--r);
+  background: var(--bg-2); padding: 12px 14px;
 }
-
-/* tablets: same canvas, horizontal scroll is expected and smooth */
-@media (min-width: 768px) and (max-width: 1599px) {
-  .bt-canvas { margin: 0; }
+.bt-listwrap summary {
+  cursor: pointer; font-family: var(--font); font-weight: 800; letter-spacing: .05em;
+  text-transform: uppercase; font-size: .8rem; color: var(--text-2);
 }
+.bt-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; }
+.bt-tab {
+  font-family: var(--font); font-weight: 800; font-size: .8rem; letter-spacing: .07em;
+  padding: 7px 16px; border-radius: 999px; cursor: pointer; flex: none;
+  border: 1px solid var(--border); background: var(--bg-3); color: var(--text-2);
+}
+.bt-tab.bt-tab-on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.bt-mobile-list { display: grid; gap: 10px; }
+@media (min-width: 700px) { .bt-mobile-list { grid-template-columns: 1fr 1fr; } }
 
 /* ---- debug panel ---- */
 .bt-debug {
-  margin: 26px 0 10px; border: 1px solid var(--border); border-radius: var(--r);
+  margin: 18px 0 10px; border: 1px solid var(--border); border-radius: var(--r);
   background: var(--bg-2); padding: 12px 14px;
 }
 .bt-debug summary {

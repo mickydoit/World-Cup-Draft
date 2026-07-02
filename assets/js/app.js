@@ -290,7 +290,7 @@ async function render(opts = {}) {
         // Hidden experimental bracket prototype — reachable only by typing the
         // URL; deliberately absent from NAV/bottom-nav. Lazy import so normal
         // visitors never download it.
-        const bt = await import('./bracket-test.js?v=1');
+        const bt = await import('./bracket-test.js?v=2');
         body = await bt.renderBracketTestPage(data);
         break;
       }

@@ -1,8 +1,10 @@
 // ============================================================================
 //  HIDDEN EXPERIMENTAL PAGE — #/bracket-test
-//  Read-only bracket prototype. Renders from the same store.loadAll() data the
-//  rest of the app uses, plus the ESPN scoreboard for topology/live state.
-//  Never writes to Supabase, never touches the score/result pipeline.
+//  Read-only radial bracket prototype (Figma "Test-bracket" design): 32 team
+//  crests around a circle, winners stepping inward ring by ring to the trophy.
+//  Renders from the same store.loadAll() data the rest of the app uses, plus
+//  the ESPN scoreboard for topology/live state. Never writes to Supabase,
+//  never touches the score/result pipeline.
 //
 //  Bracket structure comes from the explicit official-topology map below
 //  (FIFA match numbers 73–104) — NOT from kickoff order, DB row ids,
@@ -63,6 +65,19 @@ const ESPN_NAME_MAP = {
   "Cote d'Ivoire": 'Ivory Coast',
 };
 
+// DB team name → circle-flag code (https://hatscripts.github.io/circle-flags).
+const TEAM_ISO = {
+  'South Africa': 'za', 'Canada': 'ca', 'Netherlands': 'nl', 'Morocco': 'ma',
+  'Brazil': 'br', 'Japan': 'jp', 'Ivory Coast': 'ci', 'Norway': 'no',
+  'Germany': 'de', 'Paraguay': 'py', 'France': 'fr', 'Sweden': 'se',
+  'Mexico': 'mx', 'Ecuador': 'ec', 'England': 'gb-eng', 'DR Congo': 'cd',
+  'United States': 'us', 'Bosnia and Herzegovina': 'ba', 'Belgium': 'be', 'Senegal': 'sn',
+  'Portugal': 'pt', 'Croatia': 'hr', 'Spain': 'es', 'Austria': 'at',
+  'Switzerland': 'ch', 'Algeria': 'dz', 'Argentina': 'ar', 'Cape Verde': 'cv',
+  'Colombia': 'co', 'Ghana': 'gh', 'Australia': 'au', 'Egypt': 'eg',
+};
+const flagUrl = (name) => (TEAM_ISO[name] ? `https://hatscripts.github.io/circle-flags/flags/${TEAM_ISO[name]}.svg` : null);
+
 // "Round of 32 11 Winner" → official match number (for the consistency check).
 const PH_BASE = { 'Round of 32': 72, 'Round of 16': 88, 'Quarterfinal': 96, 'Semifinal': 100 };
 const PH_RE = /^(Round of 32|Round of 16|Quarterfinal|Semifinal) (\d+) (Winner|Loser)$/;
@@ -93,6 +108,7 @@ export function parseEspnEvents(json) {
       return {
         rawName: raw,
         name: ph ? null : (ESPN_NAME_MAP[raw] || raw),
+        logo: !ph && c.team?.logo ? c.team.logo : null,
         phRef: ph ? { match: PH_BASE[ph[1]] + Number(ph[2]), take: ph[3].toLowerCase() } : null,
         score: c.score != null && c.score !== '' ? Number(c.score) : null,
         winner: c.winner === true,
@@ -136,6 +152,17 @@ export function buildBracketTestModel(data, espnById, espnOk = true) {
   const ownerByTeamId = {};
   for (const pk of data.picks) ownerByTeamId[pk.team_id] = (playerById[pk.player_id] || {}).name || null;
   const teamIdFromEspnName = (name) => (name ? (teamByLower.get(name.toLowerCase()) || {}).id ?? null : null);
+
+  // ESPN crest per team id (harvested from any event the team appears in).
+  const logoByTeamId = {};
+  for (const ev of Object.values(espnById)) {
+    for (const s of [ev.home, ev.away]) {
+      if (s && s.name && s.logo) {
+        const tid = teamIdFromEspnName(s.name);
+        if (tid != null && !logoByTeamId[tid]) logoByTeamId[tid] = s.logo;
+      }
+    }
+  }
 
   // Real DB rows (teams assigned) keyed by unordered team pair; placeholders kept for id display.
   const koRows = data.fixtures.filter((f) => KO_STAGES.includes(f.stage));
@@ -279,6 +306,14 @@ export function buildBracketTestModel(data, espnById, espnOk = true) {
     nodes[m] = node;
   }
 
+  // Teams knocked out anywhere along the path (dimmed on the radial).
+  const eliminated = new Set();
+  for (const n of Object.values(nodes)) {
+    if (n.stage === 'third') continue;
+    const loser = n.loserTeamId ?? n.provisionalLoserTeamId;
+    if (loser != null) eliminated.add(loser);
+  }
+
   // --- layout wings, derived from the map (SF 101 = left, SF 102 = right) ---
   const wing = (sf) => {
     const qf = SRC[sf].slice();
@@ -297,7 +332,147 @@ export function buildBracketTestModel(data, espnById, espnOk = true) {
     dbLinked: Object.values(nodes).filter((n) => n.dbFixtureId != null).length,
     decided: Object.values(nodes).filter((n) => n.winnerTeamId != null).length,
   };
-  return { nodes, layout, wingOf, checks, counts, generatedAt: new Date() };
+  return { nodes, layout, wingOf, eliminated, logoByTeamId, checks, counts, generatedAt: new Date() };
+}
+
+// ---------------------------------------------------------------- radial SVG
+// All geometry is computed from the topology map: 32 team badges on the outer
+// ring (16 adjacent pairs), winner slots on inner rings at the mean angle of
+// their feeders, trophy at the centre. No DOM measurement anywhere.
+const R_SIZE = 720, R_C = 360;
+const RING = { team: 316, R32: 244, R16: 180, QF: 118, SF: 62 };
+const rad = (deg) => (deg * Math.PI) / 180;
+const posAt = (deg, r) => [
+  Math.round((R_C + r * Math.sin(rad(deg))) * 10) / 10,
+  Math.round((R_C - r * Math.cos(rad(deg))) * 10) / 10,
+];
+
+function radialAngles(model) {
+  const teamAngle = {}; // `${match}:${slot}` -> deg
+  const rightTeams = model.layout.right.r32.flatMap((m) => [`${m}:home`, `${m}:away`]);
+  const leftTeams = model.layout.left.r32.flatMap((m) => [`${m}:home`, `${m}:away`]);
+  rightTeams.forEach((k, i) => { teamAngle[k] = 11.25 * (i + 0.5); });
+  leftTeams.forEach((k, i) => { teamAngle[k] = 360 - 11.25 * (i + 0.5); });
+  const matchAngle = {};
+  const angleOf = (m) => {
+    if (matchAngle[m] != null) return matchAngle[m];
+    const a = SRC[m]
+      ? (angleOf(SRC[m][0]) + angleOf(SRC[m][1])) / 2
+      : (teamAngle[`${m}:home`] + teamAngle[`${m}:away`]) / 2;
+    matchAngle[m] = a;
+    return a;
+  };
+  for (const side of ['left', 'right']) for (const m of model.layout[side].sf) angleOf(m);
+  return { teamAngle, matchAngle };
+}
+
+function svgBadge(team, x, y, size, cls, logoByTeamId) {
+  const half = size / 2;
+  // Round flag first (matches the radial reference); ESPN logo is the fallback
+  // (their national-team "logos" are rectangular flags, so flag CDN wins).
+  const flag = flagUrl(team.name);
+  const crest = logoByTeamId[team.teamId] || null;
+  const img = flag || crest;
+  return `<circle cx="${x}" cy="${y}" r="${half + 1.5}" class="bt-badge-disc"/>
+    <text x="${x}" y="${y + 3.5}" class="bt-team-code">${esc((team.code || team.name).slice(0, 3).toUpperCase())}</text>
+    ${img ? `<image href="${esc(img)}" x="${x - half}" y="${y - half}" width="${size}" height="${size}" class="${cls || ''}"/>` : ''}`;
+}
+
+function svgFlagBadge(name, teamId, x, y, size, prov, model) {
+  const half = size / 2;
+  const flag = flagUrl(name) || model.logoByTeamId[teamId] || null;
+  const t = { teamId, name, code: name };
+  return `<g>
+    <circle cx="${x}" cy="${y}" r="${half + 2}" class="bt-badge-ring ${prov ? 'bt-ring-prov' : ''}"/>
+    ${flag ? `<image href="${esc(flag)}" x="${x - half}" y="${y - half}" width="${size}" height="${size}"/>`
+      : svgBadge(t, x, y, size, '', model.logoByTeamId)}
+  </g>`;
+}
+
+function nodeTitle(n) {
+  const hn = n.home ? n.home.name : (n.homeTbd || 'TBD');
+  const an = n.away ? n.away.name : (n.awayTbd || 'TBD');
+  const sc = n.home && n.home.score != null && n.away && n.away.score != null ? ` ${n.home.score}-${n.away.score}` : '';
+  const when = n.kickoff ? ` · ${FMT_DAY.format(new Date(n.kickoff))} ${FMT_TIME.format(new Date(n.kickoff))}` : '';
+  return `M${n.matchId} · ${hn} v ${an}${sc}${when}`;
+}
+
+function renderRadial(model) {
+  const { nodes } = model;
+  const { teamAngle, matchAngle } = radialAngles(model);
+  const winnerPos = (m) => posAt(matchAngle[m], RING[stageOf(m)]);
+  let lines = '', slots = '', badges = '';
+
+  const lineCls = (n, side) => {
+    const decided = n.winnerTeamId != null || n.provisionalWinnerTeamId != null;
+    if (decided) {
+      const wid = n.winnerTeamId ?? n.provisionalWinnerTeamId;
+      return n[side] && n[side].teamId === wid ? 'bt-l-won' : 'bt-l-lost';
+    }
+    return n[side] ? 'bt-l-known' : 'bt-l-tbd';
+  };
+
+  for (let m = 73; m <= 102; m++) {
+    const n = nodes[m];
+    const [wx, wy] = winnerPos(m);
+
+    for (const side of ['home', 'away']) {
+      const from = n.homeSource
+        ? winnerPos(side === 'home' ? n.homeSource.match : n.awaySource.match)
+        : posAt(teamAngle[`${m}:${side}`], RING.team - 24);
+      lines += `<line x1="${from[0]}" y1="${from[1]}" x2="${wx}" y2="${wy}" class="${lineCls(n, side)}"/>`;
+    }
+
+    // Outer ring: the 16 R32 pairs as crest badges.
+    if (!n.homeSource) {
+      for (const side of ['home', 'away']) {
+        const t = n[side];
+        if (!t) continue;
+        const [x, y] = posAt(teamAngle[`${m}:${side}`], RING.team);
+        const out = model.eliminated.has(t.teamId);
+        badges += `<g class="bt-node ${out ? 'bt-out' : ''}" data-bt-node="${m}"><title>${esc(nodeTitle(n))}</title>${svgBadge(t, x, y, 40, '', model.logoByTeamId)}</g>`;
+      }
+    }
+
+    // Winner slot: flag badge once decided, small dot while TBD.
+    const wid = n.winnerTeamId ?? n.provisionalWinnerTeamId;
+    const prov = n.winnerTeamId == null && n.provisionalWinnerTeamId != null;
+    const live = n.live ? `<circle cx="${wx}" cy="${wy}" r="18" class="bt-slot-live"/>` : '';
+    const inner = wid != null
+      ? svgFlagBadge((nodes[m].home && nodes[m].home.teamId === wid ? nodes[m].home : nodes[m].away).name, wid, wx, wy, 28, prov, model)
+      : `<circle cx="${wx}" cy="${wy}" r="4" class="bt-slot-tbd"/>`;
+    slots += `<g class="bt-node" data-bt-node="${m}"><title>${esc(nodeTitle(n))}</title>${live}<circle cx="${wx}" cy="${wy}" r="17" class="bt-hit"/>${inner}</g>`;
+  }
+
+  // Final: both SF winner slots feed the centre.
+  const fin = nodes[104];
+  for (const side of ['home', 'away']) {
+    const from = winnerPos(side === 'home' ? 101 : 102);
+    lines += `<line x1="${from[0]}" y1="${from[1]}" x2="${R_C}" y2="${R_C}" class="${lineCls(fin, side)}"/>`;
+  }
+  const champId = fin.winnerTeamId ?? fin.provisionalWinnerTeamId;
+  const champ = champId != null
+    ? `<g class="bt-node" data-bt-node="104"><title>${esc(nodeTitle(fin))}</title>
+        ${svgFlagBadge((fin.home && fin.home.teamId === champId ? fin.home : fin.away).name, champId, R_C, R_C - 62, 40, fin.winnerTeamId == null, model)}
+        <text x="${R_C}" y="${R_C - 30}" class="bt-champ-label">CHAMPION</text></g>`
+    : '';
+  const centre = `
+    <circle cx="${R_C}" cy="${R_C}" r="118" fill="url(#btGlow)"/>
+    <g class="bt-node" data-bt-node="104"><title>${esc(nodeTitle(fin))}</title>
+      <circle cx="${R_C}" cy="${R_C}" r="46" class="bt-hit"/>
+      <text x="${R_C}" y="${R_C + 24}" class="bt-trophy-txt">🏆</text>
+    </g>
+    ${champ}`;
+
+  return `<div class="bt-radial"><svg viewBox="0 0 ${R_SIZE} ${R_SIZE}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="World Cup knockout bracket">
+    <defs>
+      <radialGradient id="btGlow"><stop offset="0%" stop-color="rgba(212,175,55,.28)"/><stop offset="55%" stop-color="rgba(212,175,55,.10)"/><stop offset="100%" stop-color="rgba(212,175,55,0)"/></radialGradient>
+    </defs>
+    <g class="bt-lines">${lines}</g>
+    ${centre}
+    ${slots}
+    ${badges}
+  </svg></div>`;
 }
 
 // ---------------------------------------------------------------- view bits
@@ -322,47 +497,19 @@ function statusHtml(n) {
 }
 
 function matchCard(n, opts = {}) {
-  const cls = ['bt-match', n.status === 'finished' ? 'bt-played' : '', n.live ? 'bt-islive' : '', opts.big ? 'bt-big' : ''].join(' ');
+  const cls = ['bt-match', n.status === 'finished' ? 'bt-played' : '', n.live ? 'bt-islive' : ''].join(' ');
   const feed = opts.showFeed && n.feedsInto
     ? `<div class="bt-feed">→ feeds M${n.feedsInto.match} <span>(${n.feedsInto.slot})</span></div>` : '';
+  const roundTag = opts.showRound ? `<span class="bt-mround">${esc(n.round)}</span>` : '';
   return `<div class="${cls}" data-match="${n.matchId}">
-    <div class="bt-mhead"><span class="bt-mnum">M${n.matchId}</span>${statusHtml(n)}</div>
+    <div class="bt-mhead"><span class="bt-mnum">M${n.matchId}</span>${roundTag}${statusHtml(n)}</div>
     ${sideHtml(n.home, n.homeTbd)}
     ${sideHtml(n.away, n.awayTbd)}
     ${feed}
   </div>`;
 }
 
-function columnHtml(matches, nodes, colKey) {
-  return `<div class="bt-col" data-col="${colKey}">${matches.map((m) => matchCard(nodes[m])).join('')}</div>`;
-}
-
-function renderCanvas(model) {
-  const { nodes, layout } = model;
-  const heads = ['R32', 'R16', 'QF', 'SF', 'FINAL', 'SF', 'QF', 'R16', 'R32']
-    .map((h) => `<div class="bt-colhead">${h}</div>`).join('');
-  const center = `<div class="bt-col bt-center" data-col="center">
-    <div class="bt-trophy">🏆</div>
-    ${matchCard(nodes[layout.final], { big: true })}
-    <div class="bt-thirdwrap"><div class="bt-thirdlabel">3rd place playoff</div>${matchCard(nodes[layout.third])}</div>
-  </div>`;
-  return `<div class="bt-scroll"><div class="bt-canvas">
-    <div class="bt-heads">${heads}</div>
-    <div class="bt-canvas-body">
-      ${columnHtml(layout.left.r32, nodes, 'L-r32')}
-      ${columnHtml(layout.left.r16, nodes, 'L-r16')}
-      ${columnHtml(layout.left.qf, nodes, 'L-qf')}
-      ${columnHtml(layout.left.sf, nodes, 'L-sf')}
-      ${center}
-      ${columnHtml(layout.right.sf, nodes, 'R-sf')}
-      ${columnHtml(layout.right.qf, nodes, 'R-qf')}
-      ${columnHtml(layout.right.r16, nodes, 'R-r16')}
-      ${columnHtml(layout.right.r32, nodes, 'R-r32')}
-    </div>
-  </div></div>`;
-}
-
-// Mobile: round tabs + stacked cards (bracket order, never kickoff order).
+// Round tabs + stacked cards (bracket order, never kickoff order).
 const TABS = [
   { key: 'R32', label: 'R32' }, { key: 'R16', label: 'R16' },
   { key: 'QF', label: 'QF' }, { key: 'SF', label: 'SF' }, { key: 'final', label: 'FINAL' },
@@ -390,14 +537,26 @@ function defaultTab(model) {
   return 'final';
 }
 
-function renderMobile(model) {
+function renderMatchList(model) {
   const active = btActiveTab || defaultTab(model);
   const tabs = TABS.map((t) =>
     `<button class="bt-tab ${t.key === active ? 'bt-tab-on' : ''}" data-tab="${t.key}">${t.label}</button>`).join('');
-  return `<div class="bt-mobile">
+  return `<details class="bt-listwrap"><summary>All matches — round by round</summary>
     <div class="bt-tabs">${tabs}</div>
     <div class="bt-mobile-list">${renderRoundList(model, active)}</div>
-  </div>`;
+  </details>`;
+}
+
+// The match shown in the detail card before any tap: live game first, then
+// the next unfinished kickoff, then the final.
+function defaultDetailMatch(model) {
+  const ns = Object.values(model.nodes);
+  const live = ns.find((n) => n.live);
+  if (live) return live.matchId;
+  const upcoming = ns
+    .filter((n) => n.status !== 'finished' && n.kickoff)
+    .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff))[0];
+  return upcoming ? upcoming.matchId : 104;
 }
 
 // ---------------------------------------------------------------- debug panel
@@ -450,69 +609,29 @@ function renderDebugPanel(model) {
   </details>`;
 }
 
-// ---------------------------------------------------------------- connectors
-// SVG winner-path lines, drawn from measured card positions inside the fixed
-// canvas. Geometry follows FEEDS (the topology), nothing else.
-function drawConnectors() {
-  const body = document.querySelector('.bt-canvas-body');
-  const model = window.__btModel;
-  if (!body || !model) return;
-  const old = body.querySelector('.bt-lines');
-  if (old) old.remove();
-  const origin = body.getBoundingClientRect();
-  const rectOf = (m) => {
-    const el = body.querySelector(`[data-match="${m}"]`);
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    return { left: r.left - origin.left, right: r.right - origin.left, midY: r.top - origin.top + r.height / 2 };
-  };
-  let paths = '';
-  for (const [mStr, feed] of Object.entries(FEEDS)) {
-    const m = Number(mStr);
-    const from = rectOf(m), to = rectOf(feed.match);
-    if (!from || !to) continue;
-    const leftWing = model.wingOf[m] === 'left';
-    const sx = leftWing ? from.right : from.left;
-    const tx = leftWing ? to.left : to.right;
-    const mx = (sx + tx) / 2;
-    const decided = model.nodes[m].winnerTeamId != null || model.nodes[m].provisionalWinnerTeamId != null;
-    paths += `<path class="${decided ? 'bt-line-won' : 'bt-line'}" d="M ${sx} ${from.midY} L ${mx} ${from.midY} L ${mx} ${to.midY} L ${tx} ${to.midY}"/>`;
-  }
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('class', 'bt-lines');
-  svg.setAttribute('width', body.scrollWidth);
-  svg.setAttribute('height', body.scrollHeight);
-  svg.innerHTML = paths;
-  body.prepend(svg);
-}
-
-function scheduleConnectorDraw() {
-  if (typeof window === 'undefined') return;
-  let tries = 0;
-  const tick = () => {
-    if (!location.hash.startsWith('#/bracket-test')) return;
-    if (document.querySelector('.bt-canvas-body')) { drawConnectors(); return; }
-    if (++tries < 15) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-}
-
 // ---------------------------------------------------------------- wiring
 let handlersInstalled = false;
 function installHandlers() {
   if (handlersInstalled || typeof document === 'undefined') return;
   handlersInstalled = true;
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('.bt-tab');
-    if (!t || !window.__btModel) return;
-    btActiveTab = t.dataset.tab;
-    const list = document.querySelector('.bt-mobile-list');
-    if (list) list.innerHTML = renderRoundList(window.__btModel, btActiveTab);
-    document.querySelectorAll('.bt-tab').forEach((x) => x.classList.toggle('bt-tab-on', x.dataset.tab === btActiveTab));
-  });
-  window.addEventListener('resize', () => {
-    clearTimeout(installHandlers._rt);
-    installHandlers._rt = setTimeout(() => { if (location.hash.startsWith('#/bracket-test')) drawConnectors(); }, 150);
+    if (!window.__btModel) return;
+    const tab = e.target.closest('.bt-tab');
+    if (tab) {
+      btActiveTab = tab.dataset.tab;
+      const list = document.querySelector('.bt-mobile-list');
+      if (list) list.innerHTML = renderRoundList(window.__btModel, btActiveTab);
+      document.querySelectorAll('.bt-tab').forEach((x) => x.classList.toggle('bt-tab-on', x.dataset.tab === btActiveTab));
+      return;
+    }
+    const node = e.target.closest('[data-bt-node]');
+    if (node) {
+      const m = Number(node.dataset.btNode);
+      const detail = document.getElementById('bt-detail');
+      if (detail && window.__btModel.nodes[m]) detail.innerHTML = matchCard(window.__btModel.nodes[m], { showFeed: true, showRound: true });
+      document.querySelectorAll('.bt-node.bt-sel').forEach((x) => x.classList.remove('bt-sel'));
+      node.classList.add('bt-sel');
+    }
   });
 }
 
@@ -521,7 +640,7 @@ function ensureCss() {
   const link = document.createElement('link');
   link.id = 'bt-css';
   link.rel = 'stylesheet';
-  link.href = 'assets/css/bracket-test.css?v=1';
+  link.href = 'assets/css/bracket-test.css?v=2';
   document.head.appendChild(link);
 }
 
@@ -539,7 +658,6 @@ export async function renderBracketTestPage(data) {
     }
     if (model.checks.topologyMismatches.length) console.warn('[bracket-test] topology mismatches:', model.checks.topologyMismatches);
   }
-  scheduleConnectorDraw();
 
   const chips = [
     `<span class="bt-chip ${espn.ok ? 'bt-ok' : 'bt-warn'}">ESPN ${espn.ok ? '✓' : espn.fromCache ? 'cache' : '✗'} · ${model.counts.espnEvents} events</span>`,
@@ -550,10 +668,13 @@ export async function renderBracketTestPage(data) {
 
   return `<div class="bt-wrap">
     <h1>Bracket · Test</h1>
-    <p class="hint">Experimental prototype — official-topology bracket. Not linked in navigation; auto-refreshes every 60s.</p>
+    <p class="hint">Experimental prototype — official-topology radial bracket. Tap any badge or slot for match details. Auto-refreshes every 60s.</p>
     <div class="bt-status">${chips}</div>
-    ${renderCanvas(model)}
-    ${renderMobile(model)}
+    ${renderRadial(model)}
+    <div class="bt-detail" id="bt-detail">${matchCard(model.nodes[defaultDetailMatch(model)], { showFeed: true, showRound: true })}</div>
+    ${renderMatchList(model)}
     ${renderDebugPanel(model)}
   </div>`;
 }
+
+export { renderRadial };
