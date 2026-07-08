@@ -158,7 +158,7 @@ a:hover { text-decoration: underline; }
 .splash-behind.splash-reveal { opacity: 1; }
 .splash-header {
   position: absolute;
-  top: 8%;
+  top: 12%;
   left: 50%; transform: translateX(-50%);
   z-index: 3;
   opacity: 0;
@@ -212,7 +212,7 @@ a:hover { text-decoration: underline; }
   to   { opacity: 1; }
 }
 @media (max-height: 700px) {
-  .splash-header { top: 6%; }
+  .splash-header { top: 10%; }
   .splash-bar-track { top: 32%; }
 }
 @media (min-width: 768px) {
@@ -221,7 +221,7 @@ a:hover { text-decoration: underline; }
 }
 
 @media (max-width: 767px) {
-  .splash-header { top: calc(8% + 5px); }
+  .splash-header { top: calc(12% + 5px); }
   .splash-logo-img { width: 75vw; }
   .splash-bar-track { top: calc(38% + 5px); }
 }
