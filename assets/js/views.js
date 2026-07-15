@@ -165,8 +165,11 @@ export function renderFixtures(groups, clocks = {}) {
     if ((hasStarted || hasAnyPlayed) && !g.allPlayed) activeTitle = g.title;
   }
   if (!activeTitle) {
+    // Once the final's teams are known its day trumps other upcoming days
+    // (e.g. the 3rd-place match) — a live day above still wins.
+    const finalDay = groups.find(g => !g.allPlayed && g.fixtures.some(f => f.stage === 'final'));
     const next = groups.find(g => !g.allPlayed && g.date_ts != null && g.date_ts > now);
-    activeTitle = next ? next.title : ((groups.find(g => !g.allPlayed) || {}).title ?? null);
+    activeTitle = finalDay ? finalDay.title : next ? next.title : ((groups.find(g => !g.allPlayed) || {}).title ?? null);
   }
 
   const renderGroup = (g) => {
