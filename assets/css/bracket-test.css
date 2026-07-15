@@ -136,3 +136,9 @@
   background: var(--bg-3); font-weight: 800; text-transform: uppercase;
   font-size: .58rem; letter-spacing: .06em; color: var(--text-3);
 }
+
+/* ---- FINAL FOCUS: once both finalists are known, fade everything else ---- */
+.bt-final-focus .bt-node,
+.bt-final-focus .bt-lines line{opacity:.22;transition:opacity .3s}
+.bt-final-focus .bt-node[data-bt-node="104"],
+.bt-final-focus .bt-lines line.bt-l-final{opacity:1}
