@@ -14,6 +14,7 @@ const SLUG_TO_STAGE = {
   'quarterfinals': 'QF',
   'semifinals': 'SF',
   'third-place': 'third',
+  '3rd-place-match': 'third',
   'final': 'final',
 };
 
