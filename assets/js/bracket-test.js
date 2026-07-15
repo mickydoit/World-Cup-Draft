@@ -453,7 +453,7 @@ function renderRadial(model) {
   const fin = nodes[104];
   for (const side of ['home', 'away']) {
     const from = winnerPos(side === 'home' ? 101 : 102);
-    lines += `<line x1="${from[0]}" y1="${from[1]}" x2="${R_C}" y2="${R_C}" class="${lineCls(fin, side)}"/>`;
+    lines += `<line x1="${from[0]}" y1="${from[1]}" x2="${R_C}" y2="${R_C}" class="${lineCls(fin, side)} bt-l-final"/>`;
   }
   const champId = fin.winnerTeamId ?? fin.provisionalWinnerTeamId;
   const champ = champId != null
@@ -470,7 +470,7 @@ function renderRadial(model) {
     </g>
     ${champ}`;
 
-  return `<div class="bt-radial"><svg viewBox="0 0 ${R_SIZE} ${R_SIZE}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="World Cup knockout bracket">
+  return `<div class="bt-radial${fin.home && fin.away ? ' bt-final-focus' : ''}"><svg viewBox="0 0 ${R_SIZE} ${R_SIZE}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="World Cup knockout bracket">
     <defs>
       <radialGradient id="btGlow"><stop offset="0%" stop-color="rgba(168,85,247,.32)"/><stop offset="55%" stop-color="rgba(168,85,247,.12)"/><stop offset="100%" stop-color="rgba(168,85,247,0)"/></radialGradient>
     </defs>
@@ -643,7 +643,7 @@ function ensureCss() {
   const link = document.createElement('link');
   link.id = 'bt-css';
   link.rel = 'stylesheet';
-  link.href = 'assets/css/bracket-test.css?v=5';
+  link.href = 'assets/css/bracket-test.css?v=6';
   document.head.appendChild(link);
 }
 
